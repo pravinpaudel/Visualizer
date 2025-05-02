@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { ChevronRight, Search, Filter, Code, Layers, GitBranch, Database, SortAsc, BarChart2, Network, Lock, Zap } from 'lucide-react';
 import Footer from '../components/Footer';
+import Navbar from '../components/Navbar';
 
 // Main Home Page Component
 export default function HomePage() {
@@ -191,9 +192,11 @@ export default function HomePage() {
   };
 
   return (
+    <div>
+      <Navbar />
     <div className="min-h-screen bg-gray-50">
       {/* Header with glossy effect */}
-      <header className="bg-gradient-to-r from-blue-600 to-indigo-700 text-white shadow-lg">
+      {/* <header className="bg-gradient-to-r from-blue-600 to-indigo-700 text-white shadow-lg">
         <div className="container mx-auto px-4 py-6">
           <div className="flex flex-col md:flex-row md:justify-between md:items-center">
             <div className="mb-4 md:mb-0">
@@ -201,7 +204,7 @@ export default function HomePage() {
               <p className="text-blue-100 mt-1">Interactive learning through visualization</p>
             </div>
             
-            {/* Search bar */}
+            
             <div className="relative w-full md:w-64">
               <input
                 type="text"
@@ -218,8 +221,24 @@ export default function HomePage() {
             </div>
           </div>
         </div>
-      </header>
+      </header> */}
 
+      
+      <div className="w-full md:w-64">
+              <input
+                type="text"
+                placeholder="Search algorithms..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 rounded-lg bg-white bg-opacity-20 text-white 
+                           placeholder-blue-200 border border-blue-400 focus:outline-none focus:ring-2 
+                           focus:ring-white focus:border-transparent"
+              />
+              <div className="absolute left-3 top-2.5 text-blue-200">
+                <Search size={18} />
+              </div>
+            </div>
+      
       <main className="container mx-auto px-4 py-8">
         {/* Category filter tabs */}
         <div className="mb-8 overflow-x-auto">
@@ -336,6 +355,7 @@ export default function HomePage() {
           </div>
         </div>
       </main>
+    </div>
         <Footer />
     </div>
   );

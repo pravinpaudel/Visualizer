@@ -79,13 +79,12 @@ export default function VisualgoNavbar() {
                       <DropdownItem href="#">Sorting Algorithms</DropdownItem>
                       <DropdownItem href="#">Graph Algorithms</DropdownItem>
                       <DropdownItem href="#">Tree Structures</DropdownItem>
-                      <DropdownItem href="#">Dynamic Programming</DropdownItem>
                     </div>
                   </div>
                 )}
               </div>
               
-              {/* Tutorials dropdown */}
+              {/* Tutorials dropdown
               <div className="relative">
                 <button 
                   onClick={() => toggleDropdown('tutorials')}
@@ -108,16 +107,16 @@ export default function VisualgoNavbar() {
                     </div>
                   </div>
                 )}
-              </div>
+              </div> */}
               
-              <NavLink icon={<Code size={18} />} href="#">Playground</NavLink>
+              {/* <NavLink icon={<Code size={18} />} href="#">Playground</NavLink> */}
               <NavLink icon={<Settings size={18} />} href="#">Settings</NavLink>
             </div>
           </div>
 
           {/* Search bar */}
           <div className="hidden md:block">
-            <div className="relative">
+            {/* <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                 <Search size={16} className="text-gray-400" />
               </div>
@@ -126,7 +125,7 @@ export default function VisualgoNavbar() {
                 className="block w-full pl-10 pr-4 py-2 border border-transparent rounded-md bg-gray-100 focus:outline-none focus:bg-white focus:border-indigo-300 transition duration-150 text-sm"
                 placeholder="Search algorithms..."
               />
-            </div>
+            </div> */}
           </div>
 
           {/* Mobile menu button */}
