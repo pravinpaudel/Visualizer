@@ -7,7 +7,6 @@ import LLRBT from  "./pages/LLRBST";
 import MergeSort from "./pages/MergeSort";
 import HeapSort from "./pages/HeapSort";
 import Dijkstras from "./pages/Dijkstras";
-import Kruskal from "./pages/Kruskal";
 
 function App() {
   return (
@@ -20,7 +19,6 @@ function App() {
           <Route path="/mergesort" element={<MergeSort />} />
           <Route path="/heapsort" element={<HeapSort />} />
           <Route path="/dijkstra" element={<Dijkstras />} />
-          <Route path="/kruskal" element={<Kruskal />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

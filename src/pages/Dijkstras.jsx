@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Play, Pause, ChevronLeft, ChevronRight, RotateCcw, Settings } from 'lucide-react';
 import Footer from '../components/Footer';
-import Navbar from '../components/Navbar';
 
 // Enhanced graph data with more nodes and connections
 const initialGraph = {
@@ -382,12 +381,11 @@ export default function DijkstraVisualization() {
 
   return (
     <div className="flex flex-col h-screen w-full bg-gradient-to-br from-blue-50 to-purple-50">
-      <Navbar />
       {/* Navigation Panel */}
-      <div className="sticky top-16 z-10 bg-white bg-opacity-80 backdrop-blur-md border-b border-gray-200 shadow-sm p-4 mt-16">
+      <div className="sticky top-0 z-10 bg-white bg-opacity-80 backdrop-blur-md border-b border-gray-200 shadow-sm p-4">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
           <div className="flex-1 text-center md:text-left">
-            <h1 className="text-2xl font-bold text-indigo-500">Dijkstra's Algorithm Visualization</h1>
+            <h1 className="text-2xl font-bold text-gray-800">Dijkstra's Algorithm Visualization</h1>
             <p className="text-sm text-gray-600">
               Step {currentStep + 1} of {totalSteps}
             </p>

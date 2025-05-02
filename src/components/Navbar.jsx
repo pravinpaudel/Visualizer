@@ -40,7 +40,7 @@ export default function VisualgoNavbar() {
 
   return (
     <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-      scrolled ? "bg-white/70 backdrop-blur-lg shadow-md" : "bg-white/50 backdrop-blur-md"
+      scrolled ? "bg-white/70 backdrop-blur-lg shadow-md" : "bg-white/50 backdrop-blur-sm"
     }`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
@@ -49,21 +49,21 @@ export default function VisualgoNavbar() {
             <div className="flex-shrink-0">
               <div className="flex items-center gap-2">
                 <GitBranch className="h-8 w-8 text-indigo-600" />
-                <span className="font-bold text-xl tracking-wide text-indigo-700">Visualgo</span>
+                <span className="font-bold text-xl text-indigo-700">Visualgo</span>
               </div>
             </div>
           </div>
 
           {/* Desktop menu */}
           <div className="hidden md:block">
-            <div className="flex items-center space-x-4 tracking-wide">
-              <NavLink icon={<Home size={18} />} href="/" className="text-lg bg-red">Home</NavLink>
+            <div className="flex items-center space-x-4">
+              <NavLink icon={<Home size={18} />} href="/">Home</NavLink>
               
               {/* Algorithms dropdown */}
               <div className="relative">
                 <button 
                   onClick={() => toggleDropdown('algorithms')}
-                  className="group flex items-center text-gray-700 hover:text-indigo-600 px-3 py-2 rounded-md text-sm font-medium "
+                  className="group flex items-center text-gray-700 hover:text-indigo-600 px-3 py-2 rounded-md text-sm font-medium"
                 >
                   <BarChart2 size={18} className="mr-2" />
                   Algorithms
@@ -79,12 +79,13 @@ export default function VisualgoNavbar() {
                       <DropdownItem href="#">Sorting Algorithms</DropdownItem>
                       <DropdownItem href="#">Graph Algorithms</DropdownItem>
                       <DropdownItem href="#">Tree Structures</DropdownItem>
+                      <DropdownItem href="#">Dynamic Programming</DropdownItem>
                     </div>
                   </div>
                 )}
               </div>
               
-              {/* Tutorials dropdown
+              {/* Tutorials dropdown */}
               <div className="relative">
                 <button 
                   onClick={() => toggleDropdown('tutorials')}
@@ -107,16 +108,16 @@ export default function VisualgoNavbar() {
                     </div>
                   </div>
                 )}
-              </div> */}
+              </div>
               
-              <NavLink icon={<Code size={18} />} href="#" className="tracking-wide text-lg">Playground</NavLink>
+              <NavLink icon={<Code size={18} />} href="#">Playground</NavLink>
               <NavLink icon={<Settings size={18} />} href="#">Settings</NavLink>
             </div>
           </div>
 
           {/* Search bar */}
           <div className="hidden md:block">
-            {/* <div className="relative">
+            <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                 <Search size={16} className="text-gray-400" />
               </div>
@@ -125,7 +126,7 @@ export default function VisualgoNavbar() {
                 className="block w-full pl-10 pr-4 py-2 border border-transparent rounded-md bg-gray-100 focus:outline-none focus:bg-white focus:border-indigo-300 transition duration-150 text-sm"
                 placeholder="Search algorithms..."
               />
-            </div> */}
+            </div>
           </div>
 
           {/* Mobile menu button */}
@@ -144,7 +145,7 @@ export default function VisualgoNavbar() {
       {/* Mobile menu */}
       <div className={`md:hidden transition-all duration-300 ease-in-out ${isOpen ? 'max-h-screen opacity-100' : 'max-h-0 opacity-0 overflow-hidden'}`}>
         <div className="px-2 pt-2 pb-3 space-y-1 bg-white/90 backdrop-blur-sm shadow-lg">
-          <MobileNavLink onClick={handleLinkClick} icon={<Home size={18} />} href="/">Home</MobileNavLink>
+          <MobileNavLink onClick={handleLinkClick} icon={<Home size={18} />} href="#">Home</MobileNavLink>
           
           {/* Mobile Algorithms dropdown */}
           <button 

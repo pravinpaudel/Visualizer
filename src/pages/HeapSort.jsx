@@ -1,11 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
 import { Play, Pause, RotateCcw, ChevronLeft, ChevronRight, RefreshCw, Database, Shuffle } from 'lucide-react';
 import Footer from '../components/Footer';
-import Navbar from '../components/Navbar';
 
 // Colors for visualization with updated modern palette
 const COLORS = {
-  normal: "rgba(37, 136, 178, 0.9)", // Light blue
+  normal: "rgba(56, 189, 248, 0.9)", // Light blue
   highlight: "rgba(249, 115, 22, 0.9)", // Orange
   compared: "rgba(168, 85, 247, 0.9)", // Purple
   completed: "rgba(34, 197, 94, 0.9)", // Green
@@ -422,13 +421,12 @@ export default function HeapSortVisualization() {
   };
   
   return (
-    <div className="flex flex-col min-h-screen font-sans text-gray-800 bg-gradient-to-br from-blue-50 to-purple-50" style={{ 
-      background: 'bg-gradient-to-br from-blue-50 to-purple-50',
+    <div className="flex flex-col min-h-screen font-sans text-gray-800" style={{ 
+      background: 'linear-gradient(135deg, #f0f4f8 0%, #d1dde6 100%)',
       fontFamily: '"Inter", "Poppins", sans-serif'
     }}>
-      <Navbar />
       {/* Header */}
-      <header className="py-4 bg-white bg-opacity-90 shadow-md backdrop-filter backdrop-blur-sm mt-15">
+      <header className="py-4 bg-white bg-opacity-90 shadow-md backdrop-filter backdrop-blur-sm sticky top-0 z-10">
         <div className="container mx-auto px-4">
           <h1 className="text-3xl font-bold text-center bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600">
             Heap Sort Visualization
@@ -661,7 +659,7 @@ export default function HeapSortVisualization() {
             </div>
             <div className="flex items-center">
               <div className="w-4 h-4 rounded-full mr-2" style={{ backgroundColor: COLORS.highlight }}></div>
-              <span className="text-sm">Selected Node</span>
+              <span className="text-sm">Highlighted Node</span>
             </div>
             <div className="flex items-center">
               <div className="w-4 h-4 rounded-full mr-2" style={{ backgroundColor: COLORS.compared }}></div>
@@ -676,6 +674,9 @@ export default function HeapSortVisualization() {
       </main>
       
       {/* Footer */}
+      <footer className="bg-white bg-opacity-90 py-3 text-center text-gray-500 text-sm shadow-inner">
+        <p>Heap Sort Visualization Tool | Interactive Learning Platform</p>
+      </footer>
       <Footer />
     </div>
     
