@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Footer from '../components/Footer';
+import Navbar from '../components/Navbar';
 
 export default function QuickSortVisualizer() {
   const [array, setArray] = useState([]);
@@ -337,6 +338,7 @@ export default function QuickSortVisualizer() {
   
   return (
     <div>
+      <Navbar />
     <div className="flex flex-col items-center p-4 w-full max-w-4xl mx-auto">
       <h1 className="text-2xl font-bold mb-4">Quick Sort Visualizer</h1>
       

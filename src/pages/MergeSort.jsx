@@ -2,6 +2,9 @@ import { useState, useEffect, useRef } from 'react';
 import { PlayCircle, PauseCircle, StepForward, StepBack, RotateCcw, ChevronUp, ChevronDown } from 'lucide-react';
 import Footer from '../components/Footer';
 import Navbar from '../components/Navbar';
+import MergeProcessVisualization from '../components/MergeProcessVisualization';
+import RecursionTreeVisualization from '../components/RecursionTreeVisualization';
+import ArrayVisualization from '../components/ArrayVisualization';
 
 // Main Merge Sort Visualizer Component
 export default function MergeSortVisualizer() {
@@ -239,9 +242,9 @@ export default function MergeSortVisualizer() {
   const treeHeight = Math.ceil(Math.log2(array.length)) + 1;
 
   return (
-    <div>
+    <div className="min-h-screen flex flex-col bg-gray-50">
     <Navbar />
-    <div className="flex flex-col items-center w-full max-w-6xl mx-auto p-4 space-y-6 bg-gray-50 rounded-lg">
+    <div className="flex flex-col items-center w-full max-w-6xl mx-auto p-4 space-y-6 bg-gray-50 rounded-lg relative overflow-hidden mt-12">
       <h1 className="text-3xl font-bold text-indigo-700">Merge Sort Visualization</h1>
       
       {/* Controls */}
@@ -411,194 +414,6 @@ export default function MergeSortVisualizer() {
 
     {/* Footer */}
     <Footer />
-    </div>
-  );
-}
-
-// Array Visualization Component
-function ArrayVisualization({ step, originalArray }) {
-  const maxValue = Math.max(...originalArray) * 1.2;
-  
-  return (
-    <div className="mb-8">
-      <div className="flex items-end justify-center h-64 space-x-2">
-        {step.array.map((value, index) => {
-          // Determine element styling based on the current step
-          let bgColor = 'bg-blue-500';
-          let textColor = 'text-white';
-          
-          // Highlight elements based on the current step type
-          if (step.type === 'divide') {
-            if (index >= step.start && index <= step.end) {
-              bgColor = 'bg-indigo-500';
-              if (index === step.mid) bgColor = 'bg-red-600';
-            } else {
-              bgColor = 'bg-gray-300';
-            }
-          } else if (['compare', 'remaining', 'before-merge', 'after-merge'].includes(step.type)) {
-            if (index >= step.start && index <= step.end) {
-              bgColor = 'bg-green-500';
-            } else {
-              bgColor = 'bg-gray-300';
-            }
-          } else if (step.type === 'complete') {
-            bgColor = 'bg-green-500';
-          }
-          
-          return (
-            <div
-              key={index}
-              className="flex flex-col items-center"
-            >
-              <div
-                className={`${bgColor} w-12 rounded-t-md transition-all duration-300 flex items-end justify-center ${textColor} font-semibold`}
-                style={{ height: `${(value / maxValue) * 200}px` }}
-              >
-                {value}
-              </div>
-              <div className="text-xs mt-1 text-gray-500">{index}</div>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-// Merge Process Visualization Component
-function MergeProcessVisualization({ step }) {
-  if (!['compare', 'remaining', 'before-merge', 'after-merge'].includes(step.type)) {
-    return null;
-  }
-  
-  return (
-    <div className="mt-8 p-4 border border-gray-200 rounded-lg">
-      <h3 className="text-lg font-semibold text-gray-700 mb-4">Merge Process</h3>
-      
-      {/* Left and Right subarrays */}
-      {(step.type === 'compare' || step.type === 'remaining' || step.type === 'before-merge') && (
-        <div className="grid grid-cols-2 gap-4 mb-4">
-          <div className="p-3 bg-gray-50 rounded-md">
-            <p className="text-sm text-gray-500 mb-2">Left Subarray</p>
-            <div className="flex space-x-2">
-              {step.left.map((value, idx) => (
-                <div
-                  key={`left-${idx}`}
-                  className={`w-10 h-10 flex items-center justify-center rounded-md ${
-                    step.type === 'compare' && step.leftIndex === idx && step.result === 'left'
-                      ? 'bg-green-500 text-white'
-                      : step.type === 'compare' && step.leftIndex === idx
-                      ? 'bg-yellow-300'
-                      : step.type === 'remaining' && step.leftIndex === idx
-                      ? 'bg-green-500 text-white'
-                      : 'bg-blue-100'
-                  }`}
-                >
-                  {value}
-                </div>
-              ))}
-            </div>
-          </div>
-          
-          <div className="p-3 bg-gray-50 rounded-md">
-            <p className="text-sm text-gray-500 mb-2">Right Subarray</p>
-            <div className="flex space-x-2">
-              {step.right.map((value, idx) => (
-                <div
-                  key={`right-${idx}`}
-                  className={`w-10 h-10 flex items-center justify-center rounded-md ${
-                    step.type === 'compare' && step.rightIndex === idx && step.result === 'right'
-                      ? 'bg-green-500 text-white'
-                      : step.type === 'compare' && step.rightIndex === idx
-                      ? 'bg-yellow-300'
-                      : step.type === 'remaining' && step.rightIndex === idx
-                      ? 'bg-green-500 text-white'
-                      : 'bg-blue-100'
-                  }`}
-                >
-                  {value}
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
-      
-      {/* Merged array */}
-      {(step.type === 'compare' || step.type === 'remaining' || step.type === 'after-merge') && step.merged && (
-        <div className="p-3 bg-indigo-50 rounded-md">
-          <p className="text-sm text-gray-500 mb-2">Merged Result</p>
-          <div className="flex flex-wrap space-x-2">
-            {step.merged.map((value, idx) => (
-              <div
-                key={`merged-${idx}`}
-                className={`w-10 h-10 flex items-center justify-center rounded-md ${
-                  (step.type === 'compare' || step.type === 'remaining') && 
-                  idx === step.merged.length - 1
-                    ? 'bg-green-500 text-white'
-                    : 'bg-indigo-100'
-                }`}
-              >
-                {value}
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-// Recursion Tree Visualization Component
-function RecursionTreeVisualization({ step, array, treeHeight }) {
-  const renderTreeNode = (start, end, depth, currentLevel = 0) => {
-    if (currentLevel > depth || start > end) {
-      return null;
-    }
-    
-    const isHighlighted = 
-      step.type && 
-      step.start === start && 
-      step.end === end && 
-      step.depth === currentLevel;
-    
-    const mid = Math.floor((start + end) / 2);
-    const subArray = array.slice(start, end + 1);
-    
-    return (
-      <div className="flex flex-col items-center">
-        <div 
-          className={`px-2 py-1 mb-2 rounded-md text-xs border ${
-            isHighlighted 
-              ? 'bg-indigo-100 border-indigo-500' 
-              : 'bg-gray-50 border-gray-200'
-          }`}
-        >
-          [{subArray.join(', ')}]
-        </div>
-        
-        {start < end && currentLevel < depth && (
-          <div className="flex items-start space-x-4">
-            <div className="flex flex-col items-center">
-              <div className="h-6 w-px bg-gray-300"></div>
-              {renderTreeNode(start, mid, depth, currentLevel + 1)}
-            </div>
-            
-            <div className="flex flex-col items-center">
-              <div className="h-6 w-px bg-gray-300"></div>
-              {renderTreeNode(mid + 1, end, depth, currentLevel + 1)}
-            </div>
-          </div>
-        )}
-      </div>
-    );
-  };
-  
-  return (
-    <div className="overflow-x-auto">
-      <div className="min-w-max">
-        {renderTreeNode(0, array.length - 1, treeHeight, 0)}
-      </div>
     </div>
   );
 }
