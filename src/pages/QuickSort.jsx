@@ -1,548 +1,706 @@
-import React, { useState, useEffect } from 'react';
-import Footer from '../components/Footer';
+import { useState, useEffect, useRef } from 'react';
+import { ChevronRight, ChevronLeft, RefreshCw, Play, Pause, SkipForward, SkipBack, Plus, Minus } from 'lucide-react';
 import Navbar from '../components/Navbar';
+import Footer from '../components/Footer';
+
+// Constants for visualization
+const ANIMATION_SPEEDS = [2000, 1000, 500, 250, 100];
+const DEFAULT_ARRAY_SIZE = 10;
 
 export default function QuickSortVisualizer() {
+  // State variables
   const [array, setArray] = useState([]);
-  const [pivotIdx, setPivotIdx] = useState(null);
-  const [leftIdx, setLeftIdx] = useState(null);
-  const [rightIdx, setRightIdx] = useState(null);
-  const [sortedIndices, setSortedIndices] = useState([]);
-  const [currentIndices, setCurrentIndices] = useState([]);
-  const [animationSpeed, setAnimationSpeed] = useState(1000);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [arraySize, setArraySize] = useState(10);
-  const [animationHistory, setAnimationHistory] = useState([]);
+  const [sortingSteps, setSortingSteps] = useState([]);
   const [currentStep, setCurrentStep] = useState(0);
-  const [sortComplete, setSortComplete] = useState(false);
-  
-  // Generate a new random array
-  const generateArray = () => {
-    const newArray = Array.from({ length: arraySize }, () => 
-      Math.floor(Math.random() * 100) + 1
-    );
-    setArray(newArray);
-    setPivotIdx(null);
-    setLeftIdx(null);
-    setRightIdx(null);
-    setSortedIndices([]);
-    setCurrentIndices([]);
-    setAnimationHistory([]);
-    setCurrentStep(0);
-    setSortComplete(false);
-  };
-  
-  // Initialize the array when component mounts
-  useEffect(() => {
-    generateArray();
-  }, [arraySize]);
-  
-  // Capture the animation steps for quicksort using Hoare partition scheme
-  const quickSort = (arr, start = 0, end = arr.length - 1, history = [], depth = 0) => {
-    // Add visualization step to show current subarray being processed
-    history.push({
-      array: [...arr],
-      pivotIdx: null,
-      leftIdx: null,
-      rightIdx: null,
-      sortedIndices: [...sortedIndices],
-      currentIndices: [],
-      subArrayRange: [start, end],
-      message: `Starting quicksort on subarray [${start}...${end}]`,
-      depth: depth
-    });
+  const [isSorting, setIsSorting] = useState(false);
+  const [animationSpeed, setAnimationSpeed] = useState(2); // Index to ANIMATION_SPEEDS
+  const [arraySize, setArraySize] = useState(DEFAULT_ARRAY_SIZE);
+  const [message, setMessage] = useState("Press 'Start Sorting' to begin");
 
-    if (start >= end) {
-      if (start === end) {
-        history.push({
-          array: [...arr],
-          pivotIdx: null,
-          leftIdx: null,
-          rightIdx: null,
-          sortedIndices: [...Array(arr.length).keys()].filter(i => i <= start && i >= start),
-          currentIndices: [start],
-          subArrayRange: [start, end],
-          message: `Element at index ${start} is in its sorted position.`,
-          depth: depth
-        });
+  // Refs
+  const intervalRef = useRef(null);
+  const treeRef = useRef(null);
+
+  // Generate random array of given size
+  const generateRandomArray = (size) => {
+    const newArray = Array.from({ length: size }, () => Math.floor(Math.random() * 100) + 1);
+    setArray(newArray);
+    setSortingSteps([]);
+    setCurrentStep(0);
+    setMessage("Press 'Start Sorting' to begin");
+    return newArray;
+  };
+
+  // Initialize array on component mount
+  useEffect(() => {
+    generateRandomArray(arraySize);
+  }, [arraySize]);
+
+  // Cleanup interval on unmount
+  useEffect(() => {
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
+  }, []);
+
+  // Track sorting steps when array changes
+  useEffect(() => {
+    if (array.length > 0) {
+      const steps = [];
+      const initialTree = {
+        id: 'root',
+        array: [...array],
+        lo: 0,
+        hi: array.length - 1,
+        pivot: null,
+        depth: 0,
+        children: []
+      };
+      
+      const arrayCopy = [...array];
+      quickSortWithSteps(arrayCopy, 0, arrayCopy.length - 1, steps, initialTree);
+      
+      // Make sure the tree structure is properly cloned for each step
+      steps.forEach(step => {
+        if (!step.treeNodeId) {
+          step.treeNodeId = 'root';
+        }
+      });
+      
+      setSortingSteps(steps);
+    }
+  }, [array]);
+
+  // Update the message based on current step
+  useEffect(() => {
+    if (sortingSteps.length > 0 && currentStep < sortingSteps.length) {
+      setMessage(sortingSteps[currentStep].message);
+    }
+  }, [currentStep, sortingSteps]);
+
+  // QuickSort algorithm with step tracking
+  const quickSortWithSteps = (arr, lo, hi, steps, treeNode) => {
+    // Create a deepcopy function for our tree structure
+    const deepCopyTree = (tree) => {
+      if (!tree) return null;
+      
+      const copy = {...tree};
+      copy.array = [...tree.array];
+      
+      if (tree.children && tree.children.length > 0) {
+        copy.children = tree.children.map(child => deepCopyTree(child));
+      } else {
+        copy.children = [];
       }
-      return arr;
+      
+      return copy;
+    };
+    
+    // Base case: single element or empty array
+    if (hi <= lo) {
+      treeNode.message = `Subarray [${lo}...${hi}] has ${hi - lo + 1} element(s). No sorting needed.`;
+      
+      steps.push({
+        array: [...arr],
+        lo,
+        hi,
+        message: treeNode.message,
+        i: -1,
+        j: -1,
+        pivot: lo,
+        partitionComplete: false,
+        tree: deepCopyTree(treeNode),
+        treeNodeId: treeNode.id
+      });
+      return;
     }
     
-    // Choose pivot (first element)
-    const pivotValue = arr[start];
+    const pivot = lo;
+    treeNode.message = `Starting partition for subarray [${lo}...${hi}]. Pivot chosen: ${arr[pivot]} at index ${pivot}`;
     
-    history.push({
+    steps.push({
       array: [...arr],
-      pivotIdx: start,
-      leftIdx: null,
-      rightIdx: null,
-      sortedIndices: [...sortedIndices],
-      currentIndices: [start],
-      subArrayRange: [start, end],
-      message: `Selected pivot: ${pivotValue} (index ${start})`,
-      depth: depth
+      lo,
+      hi,
+      message: treeNode.message,
+      i: lo,
+      j: hi + 1,
+      pivot,
+      partitionComplete: false,
+      tree: deepCopyTree(treeNode),
+      treeNodeId: treeNode.id
     });
     
-    // Hoare partition scheme
-    const partitionIndex = partition(arr, start, end, history, pivotValue, depth);
-    
-    // Recursively sort the subarrays
-    quickSort(arr, start, partitionIndex - 1, history, depth + 1);
-    quickSort(arr, partitionIndex + 1, end, history, depth + 1);
-    
-    return arr;
-  };
-  
-  // Hoare partition scheme
-  const partition = (arr, lo, hi, history, pivotValue, depth) => {
+    // Partition
     let i = lo;
     let j = hi + 1;
     
-    history.push({
-      array: [...arr],
-      pivotIdx: lo,
-      leftIdx: i,
-      rightIdx: j,
-      sortedIndices: [...sortedIndices],
-      currentIndices: [lo],
-      subArrayRange: [lo, hi],
-      message: `Starting Hoare partition with pivot ${pivotValue} at index ${lo}`,
-      depth: depth
-    });
-    
     while (true) {
-      // Move i right while elements are less than pivot
-      do {
-        i++;
-        if (i <= hi) {
-          history.push({
-            array: [...arr],
-            pivotIdx: lo,
-            leftIdx: i,
-            rightIdx: j === hi + 1 ? null : j,
-            sortedIndices: [...sortedIndices],
-            currentIndices: [i, lo],
-            subArrayRange: [lo, hi],
-            message: `Left pointer (i) at index ${i}, comparing ${arr[i]} with pivot ${pivotValue}`,
-            depth: depth
-          });
-        }
-      } while (i <= hi && arr[i] < pivotValue);
-      
-      // Move j left while elements are greater than pivot
-      do {
-        j--;
-        if (j >= lo) {
-          history.push({
-            array: [...arr],
-            pivotIdx: lo,
-            leftIdx: i,
-            rightIdx: j,
-            sortedIndices: [...sortedIndices],
-            currentIndices: [j, lo],
-            subArrayRange: [lo, hi],
-            message: `Right pointer (j) at index ${j}, comparing ${arr[j]} with pivot ${pivotValue}`,
-            depth: depth
-          });
-        }
-      } while (j >= lo && arr[j] > pivotValue);
-      
-      // If pointers crossed, break
-      if (i >= j) {
-        history.push({
+      // Find item on left to swap
+      while (arr[++i] < arr[pivot]) {
+        if (i === hi) break;
+        
+        const message = `Left pointer i moved to ${i} (value ${arr[i]}), looking for element >= pivot (${arr[pivot]})`;
+        treeNode.message = message;
+        
+        steps.push({
           array: [...arr],
-          pivotIdx: lo,
-          leftIdx: i,
-          rightIdx: j,
-          sortedIndices: [...sortedIndices],
-          currentIndices: [i, j],
-          subArrayRange: [lo, hi],
-          message: `Pointers crossed or met (i=${i}, j=${j}), partition complete`,
-          depth: depth
+          lo,
+          hi,
+          message,
+          i,
+          j,
+          pivot,
+          partitionComplete: false,
+          tree: deepCopyTree(treeNode),
+          treeNodeId: treeNode.id
+        });
+      }
+      
+      const leftStopMessage = `Left pointer i stopped at ${i} (value ${arr[i]} ≥ pivot value ${arr[pivot]})`;
+      treeNode.message = leftStopMessage;
+      
+      steps.push({
+        array: [...arr],
+        lo,
+        hi,
+        message: leftStopMessage,
+        i,
+        j,
+        pivot,
+        partitionComplete: false,
+        tree: deepCopyTree(treeNode),
+        treeNodeId: treeNode.id
+      });
+      
+      // Find item on right to swap
+      while (arr[pivot] < arr[--j]) {
+        if (j === lo) break;
+        
+        const message = `Right pointer j moved to ${j} (value ${arr[j]}), looking for element <= pivot (${arr[pivot]})`;
+        treeNode.message = message;
+        
+        steps.push({
+          array: [...arr],
+          lo,
+          hi,
+          message,
+          i,
+          j,
+          pivot,
+          partitionComplete: false,
+          tree: deepCopyTree(treeNode),
+          treeNodeId: treeNode.id
+        });
+      }
+      
+      const rightStopMessage = `Right pointer j stopped at ${j} (value ${arr[j]} ≤ pivot value ${arr[pivot]})`;
+      treeNode.message = rightStopMessage;
+      
+      steps.push({
+        array: [...arr],
+        lo,
+        hi,
+        message: rightStopMessage,
+        i,
+        j,
+        pivot,
+        partitionComplete: false,
+        tree: deepCopyTree(treeNode),
+        treeNodeId: treeNode.id
+      });
+      
+      // Check if pointers cross
+      if (i >= j) {
+        const crossMessage = `Pointers crossed (i=${i} ≥ j=${j}). Partition complete. Swapping pivot (${arr[pivot]}) with j (${arr[j]})`;
+        treeNode.message = crossMessage;
+        
+        steps.push({
+          array: [...arr],
+          lo,
+          hi,
+          message: crossMessage,
+          i,
+          j,
+          pivot,
+          partitionComplete: false,
+          tree: deepCopyTree(treeNode),
+          treeNodeId: treeNode.id
         });
         break;
       }
       
-      // Otherwise, swap elements at i and j
-      history.push({
+      // Swap elements
+      const swapMessage = `Swapping elements: arr[i]=${arr[i]} and arr[j]=${arr[j]}`;
+      treeNode.message = swapMessage;
+      
+      steps.push({
         array: [...arr],
-        pivotIdx: lo,
-        leftIdx: i,
-        rightIdx: j,
-        sortedIndices: [...sortedIndices],
-        currentIndices: [i, j],
-        subArrayRange: [lo, hi],
-        message: `Swapping elements: ${arr[i]} at index ${i} with ${arr[j]} at index ${j}`,
-        depth: depth
+        lo,
+        hi,
+        message: swapMessage,
+        i,
+        j,
+        pivot,
+        swap: [i, j],
+        partitionComplete: false,
+        tree: deepCopyTree(treeNode),
+        treeNodeId: treeNode.id
       });
       
       [arr[i], arr[j]] = [arr[j], arr[i]];
       
-      history.push({
+      const swappedMessage = `Swapped elements: arr[i]=${arr[i]} and arr[j]=${arr[j]}`;
+      treeNode.message = swappedMessage;
+      
+      steps.push({
         array: [...arr],
-        pivotIdx: lo,
-        leftIdx: i,
-        rightIdx: j,
-        sortedIndices: [...sortedIndices],
-        currentIndices: [i, j],
-        subArrayRange: [lo, hi],
-        message: `After swap: ${arr[i]} at index ${i}, ${arr[j]} at index ${j}`,
-        depth: depth
+        lo,
+        hi,
+        message: swappedMessage,
+        i,
+        j,
+        pivot,
+        partitionComplete: false,
+        tree: deepCopyTree(treeNode),
+        treeNodeId: treeNode.id
       });
     }
     
-    // Swap pivot (at lo) with element at j
-    history.push({
+    // Swap pivot with j
+    const pivotSwapMessage = `Swapping pivot element (${arr[pivot]}) with element at j=${j} (${arr[j]})`;
+    treeNode.message = pivotSwapMessage;
+    
+    steps.push({
       array: [...arr],
-      pivotIdx: lo,
-      leftIdx: null,
-      rightIdx: j,
-      sortedIndices: [...sortedIndices],
-      currentIndices: [lo, j],
-      subArrayRange: [lo, hi],
-      message: `Moving pivot ${pivotValue} to its final position at index ${j}`,
-      depth: depth
+      lo,
+      hi,
+      message: pivotSwapMessage,
+      i,
+      j,
+      pivot,
+      swap: [pivot, j],
+      partitionComplete: false,
+      tree: deepCopyTree(treeNode),
+      treeNodeId: treeNode.id
     });
     
-    [arr[lo], arr[j]] = [arr[j], arr[lo]];
+    [arr[pivot], arr[j]] = [arr[j], arr[pivot]];
     
-    history.push({
+    const partitionCompleteMessage = `Partition complete. Pivot (${arr[j]}) is now at position ${j}. Everything to the left is ≤ pivot, everything to the right is ≥ pivot.`;
+    treeNode.message = partitionCompleteMessage;
+    treeNode.pivot = j;
+    treeNode.partitioned = true;
+    
+    steps.push({
       array: [...arr],
-      pivotIdx: j,
-      leftIdx: null,
-      rightIdx: null,
-      sortedIndices: [...sortedIndices, j],
-      currentIndices: [j],
-      subArrayRange: [lo, hi],
-      message: `Pivot ${pivotValue} is now in its sorted position at index ${j}`,
-      depth: depth
+      lo,
+      hi,
+      message: partitionCompleteMessage,
+      i,
+      j,
+      pivot: j,
+      partitionComplete: true,
+      tree: deepCopyTree(treeNode),
+      treeNodeId: treeNode.id
     });
     
-    return j;
-  };
-  
-  // Start the quicksort visualization
-  const startSort = () => {
-    const arrayCopy = [...array];
-    const history = [];
-    quickSort(arrayCopy, 0, arrayCopy.length - 1, history);
-    
-    // Add final state showing entire array as sorted
-    history.push({
-      array: arrayCopy,
-      pivotIdx: null,
-      leftIdx: null,
-      rightIdx: null,
-      sortedIndices: [...Array(arrayCopy.length).keys()],
-      currentIndices: [],
-      message: "Sorting complete!"
-    });
-    
-    setAnimationHistory(history);
-    setCurrentStep(0);
-    setSortComplete(false);
-    setIsPlaying(true);
-  };
-  
-  // Handle playing and pausing the animation
-  useEffect(() => {
-    let timer;
-    if (isPlaying && currentStep < animationHistory.length) {
-      timer = setTimeout(() => {
-        const step = animationHistory[currentStep];
-        setArray(step.array);
-        setPivotIdx(step.pivotIdx);
-        setLeftIdx(step.leftIdx);
-        setRightIdx(step.rightIdx);
-        setSortedIndices(step.sortedIndices || []);
-        setCurrentIndices(step.currentIndices || []);
-        
-        if (currentStep === animationHistory.length - 1) {
-          setSortComplete(true);
-          setIsPlaying(false);
-        } else {
-          setCurrentStep(currentStep + 1);
-        }
-      }, animationSpeed);
-    }
-    
-    return () => clearTimeout(timer);
-  }, [isPlaying, currentStep, animationHistory, animationSpeed]);
-  
-  // Navigation functions
-  const stepForward = () => {
-    if (currentStep < animationHistory.length - 1) {
-      const step = animationHistory[currentStep + 1];
-      setArray(step.array);
-      setPivotIdx(step.pivotIdx);
-      setLeftIdx(step.leftIdx);
-      setRightIdx(step.rightIdx);
-      setSortedIndices(step.sortedIndices || []);
-      setCurrentIndices(step.currentIndices || []);
-      setCurrentStep(currentStep + 1);
+    // Create left child node if needed
+    if (j > lo) {
+      const leftChild = {
+        id: `${treeNode.id}-left`,
+        array: arr.slice(lo, j),
+        lo: lo,
+        hi: j - 1,
+        pivot: null,
+        depth: treeNode.depth + 1,
+        children: [],
+        message: `Recursively sorting left subarray [${lo}...${j-1}]`
+      };
+      treeNode.children.push(leftChild);
       
-      if (currentStep + 1 === animationHistory.length - 1) {
-        setSortComplete(true);
-      }
+      steps.push({
+        array: [...arr],
+        lo: lo,
+        hi: j - 1,
+        message: `Recursively sorting left subarray [${lo}...${j-1}]`,
+        i: -1,
+        j: -1,
+        pivot: -1,
+        partitionComplete: true,
+        tree: deepCopyTree(treeNode),
+        treeNodeId: leftChild.id
+      });
+      
+      // Recursively sort left part
+      quickSortWithSteps(arr, lo, j - 1, steps, leftChild);
+    }
+    
+    // Create right child node if needed
+    if (j < hi) {
+      const rightChild = {
+        id: `${treeNode.id}-right`,
+        array: arr.slice(j + 1, hi + 1),
+        lo: j + 1,
+        hi: hi,
+        pivot: null,
+        depth: treeNode.depth + 1,
+        children: [],
+        message: `Recursively sorting right subarray [${j+1}...${hi}]`
+      };
+      treeNode.children.push(rightChild);
+      
+      steps.push({
+        array: [...arr],
+        lo: j + 1,
+        hi: hi,
+        message: `Recursively sorting right subarray [${j+1}...${hi}]`,
+        i: -1,
+        j: -1,
+        pivot: -1,
+        partitionComplete: true,
+        tree: deepCopyTree(treeNode),
+        treeNodeId: rightChild.id
+      });
+      
+      // Recursively sort right part
+      quickSortWithSteps(arr, j + 1, hi, steps, rightChild);
     }
   };
-  
-  const stepBackward = () => {
-    if (currentStep > 0) {
-      const step = animationHistory[currentStep - 1];
-      setArray(step.array);
-      setPivotIdx(step.pivotIdx);
-      setLeftIdx(step.leftIdx);
-      setRightIdx(step.rightIdx);
-      setSortedIndices(step.sortedIndices || []);
-      setCurrentIndices(step.currentIndices || []);
-      setCurrentStep(currentStep - 1);
-      setSortComplete(false);
-    }
+
+  // Control functions
+  const startSorting = () => {
+    if (sortingSteps.length === 0) return;
+    
+    setIsSorting(true);
+    
+    intervalRef.current = setInterval(() => {
+      setCurrentStep(prev => {
+        if (prev >= sortingSteps.length - 1) {
+          clearInterval(intervalRef.current);
+          setIsSorting(false);
+          return prev;
+        }
+        return prev + 1;
+      });
+    }, ANIMATION_SPEEDS[animationSpeed]);
   };
   
-  const togglePlayPause = () => {
-    setIsPlaying(!isPlaying);
+  const pauseSorting = () => {
+    clearInterval(intervalRef.current);
+    setIsSorting(false);
+  };
+  
+  const nextStep = () => {
+    pauseSorting();
+    setCurrentStep(prev => Math.min(prev + 1, sortingSteps.length - 1));
+  };
+  
+  const prevStep = () => {
+    pauseSorting();
+    setCurrentStep(prev => Math.max(prev - 1, 0));
   };
   
   const restart = () => {
+    pauseSorting();
     setCurrentStep(0);
-    setSortComplete(false);
-    if (animationHistory.length > 0) {
-      const step = animationHistory[0];
-      setArray(step.array);
-      setPivotIdx(step.pivotIdx);
-      setLeftIdx(step.leftIdx);
-      setRightIdx(step.rightIdx);
-      setSortedIndices(step.sortedIndices || []);
-      setCurrentIndices(step.currentIndices || []);
+  };
+  
+  const handleSpeedChange = (e) => {
+    const newSpeed = parseInt(e.target.value, 10);
+    setAnimationSpeed(newSpeed);
+    
+    // If currently sorting, restart the interval with the new speed
+    if (isSorting) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = setInterval(() => {
+        setCurrentStep(prev => {
+          if (prev >= sortingSteps.length - 1) {
+            clearInterval(intervalRef.current);
+            setIsSorting(false);
+            return prev;
+          }
+          return prev + 1;
+        });
+      }, ANIMATION_SPEEDS[newSpeed]);
     }
   };
   
-  // Determine bar color based on its state
-  const getBarColor = (index) => {
-    if (pivotIdx === index) return 'bg-yellow-500'; // Pivot
-    if (sortedIndices.includes(index)) return 'bg-green-500'; // Sorted elements
-    if (leftIdx === index) return 'bg-blue-500'; // Current comparison (left pointer)
-    if (rightIdx === index) return 'bg-purple-500'; // Current comparison (right pointer)
-    if (currentIndices.includes(index)) return 'bg-red-500'; // Current element being processed
-    return 'bg-gray-400'; // Default 
+  const changeArraySize = (delta) => {
+    pauseSorting();
+    const newSize = Math.max(3, Math.min(20, arraySize + delta));
+    setArraySize(newSize);
   };
   
-  // Calculate bar height relative to max value
-  const getBarHeight = (value) => {
-    const maxValue = Math.max(...array);
-    return `${(value / maxValue) * 70}%`;
+  const refreshArray = () => {
+    pauseSorting();
+    generateRandomArray(arraySize);
   };
-  
-  return (
-    <div>
-      <Navbar />
-    <div className="flex flex-col items-center p-4 w-full max-w-4xl mx-auto">
-      <h1 className="text-2xl font-bold mb-4">Quick Sort Visualizer</h1>
-      
-      <div className="w-full mb-8">
-        <div className="flex justify-between items-end h-64 bg-gray-100 p-4 rounded">
-          {array.map((value, index) => (
-            <div 
-              key={index} 
-              className="relative flex flex-col items-center justify-end mx-1 w-full"
-            >
-              <div 
-                className={`${getBarColor(index)} rounded-t w-full transition-all duration-300`}
-                style={{ 
-                  height: getBarHeight(value),
-                  // Add a background highlight for the current subarray being processed
-                  boxShadow: animationHistory.length > 0 && 
-                            currentStep < animationHistory.length && 
-                            animationHistory[currentStep].subArrayRange && 
-                            index >= animationHistory[currentStep].subArrayRange[0] && 
-                            index <= animationHistory[currentStep].subArrayRange[1]
-                            ? '0 0 10px 4px rgba(255, 165, 0, 0.5)' 
-                            : 'none' 
-                }}
-              ></div>
-              <div className={`text-xs mt-1 font-medium px-2 py-1 rounded ${
-                pivotIdx === index ? 'bg-yellow-100 border border-yellow-500' : 
-                sortedIndices.includes(index) ? 'bg-green-100 border border-green-500' :
-                leftIdx === index ? 'bg-blue-100 border border-blue-500' :
-                rightIdx === index ? 'bg-purple-100 border border-purple-500' :
-                currentIndices.includes(index) ? 'bg-red-100 border border-red-500' : ''
-              }`}>{value}</div>
-              <div className={`text-xs px-2 py-1 mt-1 rounded ${
-                pivotIdx === index ? 'bg-yellow-100 border border-yellow-500' : 
-                sortedIndices.includes(index) ? 'bg-green-100 border border-green-500' :
-                leftIdx === index ? 'bg-blue-100 border border-blue-500' :
-                rightIdx === index ? 'bg-purple-100 border border-purple-500' :
-                currentIndices.includes(index) ? 'bg-red-100 border border-red-500' : ''
-              }`}>{index}</div>
+
+  // Render Tree node
+  const renderTreeNode = (node, currentNodeId) => {
+    if (!node) return null;
+    
+    // Determine if this node is active (part of the current step's path)
+    const isActive = currentNodeId && (node.id === currentNodeId || node.id.startsWith(currentNodeId + '-'));
+    
+    // Get current step's node ID or its parent to determine the active path
+    const currentStepNodeId = currentStepData?.tree?.id || '';
+    
+    // Check if this node is in the current step path
+    const isInCurrentPath = node.id === currentStepNodeId || 
+                           currentStepNodeId.startsWith(node.id) || 
+                           node.id.startsWith(currentStepNodeId);
+    
+    // Render the node
+    return (
+      <div key={node.id} className="flex flex-col items-center">
+        <div className={`mb-1 p-2 rounded-lg border ${isInCurrentPath ? 'bg-blue-100 border-blue-400' : 'bg-gray-100 border-gray-300'}`}>
+          <div className="text-xs text-gray-500 mb-1">Node: {node.id}</div>
+          {node.array && (
+            <div className="flex justify-center space-x-1 mb-1">
+              {node.array.map((val, idx) => {
+                const isPivot = node.pivot !== null && (node.lo + idx) === node.pivot;
+                return (
+                  <div 
+                    key={idx} 
+                    className={`w-6 h-6 flex items-center justify-center text-xs rounded 
+                              ${isPivot ? 'bg-purple-300 font-bold' : 'bg-gray-200'}`}
+                  >
+                    {val}
+                  </div>
+                );
+              })}
             </div>
-          ))}
+          )}
+          <div className="text-xs">[{node.lo}...{node.hi}]</div>
+          {node.pivot !== null && (
+            <div className="text-xs text-purple-700">Pivot: {node.array[node.pivot - node.lo]} @ {node.pivot}</div>
+          )}
         </div>
+        
+        {node.children && node.children.length > 0 && (
+          <>
+            <div className="w-px h-6 bg-gray-400"></div>
+            {node.children.length === 2 && <div className="w-8 h-px bg-gray-400"></div>}
+            <div className="flex flex-row space-x-6">
+              {node.children.map(child => (
+                <div key={child.id} className="flex flex-col items-center">
+                  {renderTreeNode(child, currentStepNodeId)}
+                </div>
+              ))}
+            </div>
+          </>
+        )}
       </div>
-      
-      <div className="mb-4 w-full bg-gray-100 p-4 rounded">
-        <div className="flex justify-between mb-4">
-          <div className="flex items-center flex-wrap">
-            <div className="w-4 h-4 bg-yellow-500 mr-2"></div>
-            <span className="mr-4 text-sm">Pivot</span>
+    );
+  };
+
+  // Get current step data
+  const currentStepData = sortingSteps[currentStep] || {
+    array: array,
+    lo: 0,
+    hi: array.length - 1,
+    message: "Press 'Start Sorting' to begin",
+    i: -1,
+    j: -1,
+    pivot: 0,
+    partitionComplete: false,
+    tree: null
+  };
+
+  return (
+    <div className="flex flex-col min-h-screen bg-gray-50">
+        <Navbar />
+      <div className="flex-grow container mx-auto px-4 py-8 mt-8">
+        <div className="bg-white rounded-lg shadow-lg p-6">
+          <div className="flex justify-between items-center mb-6">
+            <h1 className="text-2xl font-bold text-gray-800">Quick Sort Visualization</h1>
             
-            <div className="w-4 h-4 bg-blue-500 mr-2"></div>
-            <span className="mr-4 text-sm">Left Pointer</span>
+            <div className="flex space-x-2">
+              <button 
+                onClick={refreshArray}
+                className="bg-blue-500 hover:bg-blue-600 text-white rounded-lg p-2"
+                title="Generate New Array"
+              >
+                <RefreshCw size={20} />
+              </button>
+              
+              <button 
+                onClick={() => changeArraySize(-1)}
+                className="bg-blue-500 hover:bg-blue-600 text-white rounded-lg p-2"
+                title="Decrease Array Size"
+                disabled={arraySize <= 3}
+              >
+                <Minus size={20} />
+              </button>
+              
+              <button 
+                onClick={() => changeArraySize(1)}
+                className="bg-blue-500 hover:bg-blue-600 text-white rounded-lg p-2"
+                title="Increase Array Size"
+                disabled={arraySize >= 20}
+              >
+                <Plus size={20} />
+              </button>
+              
+              <div className="flex items-center bg-gray-100 rounded-lg px-3 py-1">
+                <span className="text-xs mr-2">Speed:</span>
+                <input
+                  type="range"
+                  min="0"
+                  max="4"
+                  value={animationSpeed}
+                  onChange={handleSpeedChange}
+                  className="w-24"
+                  title={`Animation Speed: ${['Very Slow', 'Slow', 'Medium', 'Fast', 'Very Fast'][animationSpeed]}`}
+                />
+              </div>
+              
+              <button 
+                onClick={restart}
+                className="bg-blue-500 hover:bg-blue-600 text-white rounded-lg p-2"
+                title="Restart"
+              >
+                <SkipBack size={20} />
+              </button>
+              
+              <button 
+                onClick={prevStep}
+                className="bg-blue-500 hover:bg-blue-600 text-white rounded-lg p-2"
+                title="Previous Step"
+                disabled={currentStep === 0}
+              >
+                <ChevronLeft size={20} />
+              </button>
+              
+              {isSorting ? (
+                <button 
+                  onClick={pauseSorting}
+                  className="bg-red-500 hover:bg-red-600 text-white rounded-lg p-2"
+                  title="Pause"
+                >
+                  <Pause size={20} />
+                </button>
+              ) : (
+                <button 
+                  onClick={startSorting}
+                  className="bg-green-500 hover:bg-green-600 text-white rounded-lg p-2"
+                  title="Start Sorting"
+                >
+                  <Play size={20} />
+                </button>
+              )}
+              
+              <button 
+                onClick={nextStep}
+                className="bg-blue-500 hover:bg-blue-600 text-white rounded-lg p-2"
+                title="Next Step"
+                disabled={currentStep >= sortingSteps.length - 1}
+              >
+                <ChevronRight size={20} />
+              </button>
+            </div>
+          </div>
+          
+          {/* Message Panel */}
+          <div className="bg-gray-100 p-4 rounded-lg mb-6">
+            <p className="text-gray-800">{message}</p>
+            <div className="flex justify-between items-center mt-2">
+              <p className="text-sm text-gray-600">
+                Step: {currentStep + 1} / {sortingSteps.length}
+              </p>
+              <div className="text-sm text-gray-600">
+                Speed: {['Very Slow', 'Slow', 'Medium', 'Fast', 'Very Fast'][animationSpeed]}
+              </div>
+            </div>
+          </div>
+          
+          {/* Array Visualization */}
+          <div className="mb-8">
+            <h2 className="text-lg font-semibold mb-2">Array Visualization</h2>
+            <div className="flex justify-center mb-4">
+              <div className="flex items-end">
+                {currentStepData.array.map((value, idx) => {
+                  // Determine cell styling based on current step data
+                  let cellClass = "flex flex-col items-center mx-1";
+                  let barClass = "bg-blue-500";
+                  
+                  // Highlight pivot element
+                  if (idx === currentStepData.pivot) {
+                    barClass = "bg-purple-500";
+                  }
+                  
+                  // Highlight subarray
+                  if (idx >= currentStepData.lo && idx <= currentStepData.hi) {
+                    cellClass += " border-b-2 border-black";
+                  }
+                  
+                  // Highlight i and j pointers
+                  if (idx === currentStepData.i) {
+                    cellClass += " bg-green-100";
+                  }
+                  if (idx === currentStepData.j) {
+                    cellClass += " bg-red-100";
+                  }
+                  
+                  // Highlight elements being swapped
+                  if (currentStepData.swap && (idx === currentStepData.swap[0] || idx === currentStepData.swap[1])) {
+                    barClass = "bg-yellow-500 animate-pulse";
+                  }
+                  
+                  // Calculate bar height based on value
+                  const height = Math.max(20, (value / 100) * 200);
+                  
+                  return (
+                    <div key={idx} className={cellClass}>
+                      <div 
+                        className={`w-8 ${barClass} rounded-t-sm transition-all duration-300`} 
+                        style={{ height: `${height}px` }}
+                      ></div>
+                      <div className="text-xs mt-1">{value}</div>
+                      <div className="text-xs text-gray-500">{idx}</div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
             
-            <div className="w-4 h-4 bg-purple-500 mr-2"></div>
-            <span className="mr-4 text-sm">Right Pointer</span>
-            
-            <div className="w-4 h-4 bg-green-500 mr-2"></div>
-            <span className="mr-4 text-sm">Sorted</span>
-            
-            <div className="w-4 h-4 bg-red-500 mr-2"></div>
-            <span className="mr-4 text-sm">Current Element</span>
-            
-            <div className="w-4 h-4 bg-orange-200 mr-2 border border-orange-500"></div>
-            <span className="text-sm">Current Subarray</span>
+            {/* Legend */}
+            <div className="flex justify-center text-sm gap-4">
+              <div className="flex items-center">
+                <div className="w-4 h-4 bg-purple-500 mr-1"></div>
+                <span>Pivot</span>
+              </div>
+              <div className="flex items-center">
+                <div className="w-4 h-4 bg-green-100 mr-1"></div>
+                <span>Left Pointer (i)</span>
+              </div>
+              <div className="flex items-center">
+                <div className="w-4 h-4 bg-red-100 mr-1"></div>
+                <span>Right Pointer (j)</span>
+              </div>
+              <div className="flex items-center">
+                <div className="w-4 h-4 bg-yellow-500 mr-1"></div>
+                <span>Swapping</span>
+              </div>
+            </div>
+          </div>
+          
+          {/* Recursive Tree Visualization */}
+          <div className="mb-8 overflow-x-auto">
+            <h2 className="text-lg font-semibold mb-2">Recursive Call Tree</h2>
+            <div className="flex justify-center p-4 min-h-64 overflow-x-auto" ref={treeRef}>
+              {currentStepData.tree && (
+                <div className="flex flex-col items-center min-w-full">
+                  {renderTreeNode(currentStepData.tree, currentStepData.treeNodeId)}
+                </div>
+              )}
+            </div>
           </div>
         </div>
-        
-        <div className="h-16 bg-white p-2 rounded overflow-y-auto text-sm">
-          {animationHistory.length > 0 && currentStep < animationHistory.length 
-            ? (
-              <div>
-                {animationHistory[currentStep].depth > 0 && (
-                  <div className="text-xs text-gray-500 mb-1">
-                    Recursion depth: {animationHistory[currentStep].depth} | 
-                    Subarray: [{animationHistory[currentStep].subArrayRange[0]}...{animationHistory[currentStep].subArrayRange[1]}]
-                  </div>
-                )}
-                <div>{animationHistory[currentStep].message}</div>
-              </div>
-            ) 
-            : "Click 'Start Sort' to begin visualization"}
-        </div>
       </div>
-      
-      <div className="flex justify-between w-full mb-6">
-        <div className="flex items-center">
-          <label className="mr-2 text-sm">Array Size:</label>
-          <select 
-            value={arraySize} 
-            onChange={(e) => setArraySize(Number(e.target.value))}
-            className="border p-1 text-sm rounded"
-            disabled={isPlaying || animationHistory.length > 0}
-          >
-            <option value={5}>5</option>
-            <option value={10}>10</option>
-            <option value={15}>15</option>
-            <option value={20}>20</option>
-          </select>
-        </div>
-        
-        <div className="flex items-center">
-          <label className="mr-2 text-sm">Speed:</label>
-          <select 
-            value={animationSpeed} 
-            onChange={(e) => setAnimationSpeed(Number(e.target.value))}
-            className="border p-1 text-sm rounded"
-          >
-            <option value={2000}>Slow</option>
-            <option value={1000}>Medium</option>
-            <option value={500}>Fast</option>
-            <option value={200}>Very Fast</option>
-          </select>
-        </div>
-        
-        <button 
-          onClick={generateArray}
-          className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300 text-sm"
-          disabled={isPlaying}
-        >
-          Generate New Array
-        </button>
-      </div>
-      
-      <div className="flex space-x-4 w-full justify-center">
-        <button
-          onClick={restart}
-          disabled={animationHistory.length === 0 || currentStep === 0}
-          className={`px-4 py-2 rounded ${
-            animationHistory.length === 0 || currentStep === 0
-              ? "bg-gray-300 cursor-not-allowed"
-              : "bg-blue-500 text-white hover:bg-blue-600"
-          }`}
-        >
-          Restart
-        </button>
-        
-        <button
-          onClick={stepBackward}
-          disabled={currentStep === 0 || isPlaying}
-          className={`px-4 py-2 rounded ${
-            currentStep === 0 || isPlaying
-              ? "bg-gray-300 cursor-not-allowed"
-              : "bg-blue-500 text-white hover:bg-blue-600"
-          }`}
-        >
-          Previous Step
-        </button>
-        
-        <button
-          onClick={togglePlayPause}
-          disabled={animationHistory.length === 0 || sortComplete}
-          className={`px-4 py-2 rounded ${
-            animationHistory.length === 0 || sortComplete
-              ? "bg-gray-300 cursor-not-allowed"
-              : "bg-green-500 text-white hover:bg-green-600"
-          }`}
-        >
-          {isPlaying ? "Pause" : "Play"}
-        </button>
-        
-        <button
-          onClick={stepForward}
-          disabled={
-            currentStep === animationHistory.length - 1 || 
-            isPlaying || 
-            animationHistory.length === 0
-          }
-          className={`px-4 py-2 rounded ${
-            currentStep === animationHistory.length - 1 || 
-            isPlaying || 
-            animationHistory.length === 0
-              ? "bg-gray-300 cursor-not-allowed"
-              : "bg-blue-500 text-white hover:bg-blue-600"
-          }`}
-        >
-          Next Step
-        </button>
-        
-        <button
-          onClick={startSort}
-          disabled={isPlaying || sortComplete}
-          className={`px-4 py-2 rounded ${
-            isPlaying || sortComplete || animationHistory.length > 0
-              ? "bg-gray-300 cursor-not-allowed"
-              : "bg-red-500 text-white hover:bg-red-600"
-          }`}
-        >
-          {animationHistory.length > 0 ? "Restart Sort" : "Start Sort"}
-        </button>
-      </div>
-      
-      {sortComplete && (
-        <div className="mt-4 text-green-600 font-bold">
-          Sorting completed successfully!
-        </div>
-      )}
-      
-      {animationHistory.length > 0 && (
-        <div className="mt-4 text-sm">
-          Step {currentStep + 1} of {animationHistory.length}
-        </div>
-      )}
-    </div>
-    
-      <Footer />
+        <Footer />
     </div>
   );
 }

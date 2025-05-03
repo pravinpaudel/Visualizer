@@ -463,7 +463,7 @@ export default function DijkstraVisualization() {
        
         {/* Main Graph Visualization */}
         <div className="flex-1 bg-white bg-opacity-60 backdrop-blur-md p-6 rounded-xl shadow-md">
-          <h2 className="text-xl font-semibold mb-4">Graph Visualization</h2>
+          <h2 className="text-xl font-semibold mb-4 text-indigo-500">Graph Visualization</h2>
           <div className="relative h-96 border border-gray-200 rounded-lg overflow-hidden">
             <svg width="100%" height="100%" viewBox="0 0 500 400">
               {/* Draw the edges */}
@@ -547,7 +547,7 @@ export default function DijkstraVisualization() {
 
           {/* Step Explanation */}
           <div className="bg-white bg-opacity-60 backdrop-blur-md p-6 rounded-xl shadow-md mt-4">
-            <h2 className="text-xl font-semibold mb-4">Current Step Explanation</h2>
+            <h2 className="text-xl font-semibold mb-4 text-indigo-500">Current Step Explanation</h2>
             <div className="text-gray-800">
               {explanation}
             </div>
@@ -556,7 +556,7 @@ export default function DijkstraVisualization() {
 
           {/* Legend */}
           <div className="bg-white bg-opacity-60 backdrop-blur-md p-6 rounded-xl shadow-md mt-4">
-            <h2 className="text-xl font-semibold mb-4">Legend</h2>
+            <h2 className="text-xl font-semibold mb-4 text-indigo-500">Legend</h2>
             <div className="grid grid-cols-2 gap-3">
               <div className="flex items-center">
                 <div className="h-0.5 w-8 bg-gray-400 mr-2" style={{ strokeDasharray: '5,3' }}></div>
@@ -586,7 +586,7 @@ export default function DijkstraVisualization() {
         <div className="md:w-96 flex flex-col gap-4">
           {/* Priority Queue Visualization */}
           <div className="bg-white bg-opacity-60 backdrop-blur-md p-6 rounded-xl shadow-md">
-            <h2 className="text-xl font-semibold mb-4">Priority Queue</h2>
+            <h2 className="text-xl font-semibold mb-4 text-indigo-500">Priority Queue</h2>
             <div className="overflow-x-auto">
               {priorityQueue.length > 0 ? (
                 <table className="min-w-full divide-y divide-gray-200">
@@ -615,7 +615,7 @@ export default function DijkstraVisualization() {
           
           {/* Distance Array */}
           <div className="bg-white bg-opacity-60 backdrop-blur-md p-6 rounded-xl shadow-md">
-            <h2 className="text-xl font-semibold mb-4">Distance Array</h2>
+            <h2 className="text-xl font-semibold mb-4 text-indigo-500">Distance Array</h2>
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200">
                 <thead>

@@ -1,14 +1,15 @@
 import React from "react";
 import { 
-  GitBranch, 
-  Mail, 
-  Github, 
-  Twitter, 
+  GitBranch,  
+  Github,  
   Linkedin, 
   Youtube, 
-  ArrowRight,
-  Heart
+  Heart, 
+  Smile,
+  ArrowRight
 } from "lucide-react";
+import SocialLink from "./SocialLink";
+import FooterLink from "./FooterLink";
 
 export default function VisualgoFooter() {
   return (
@@ -27,9 +28,9 @@ export default function VisualgoFooter() {
               Designed to make computer science concepts clearer through animation.
             </p>
             <div className="flex space-x-4 pt-2">
-              <SocialLink href="#" icon={<Github size={18} />} />
-              <SocialLink href="#" icon={<Twitter size={18} />} />
-              <SocialLink href="#" icon={<Linkedin size={18} />} />
+              <SocialLink href="https://github.com/pravinpaudel" icon={<Github size={18} />} />
+              <SocialLink href="https://pravinpaudel.vercel.app/" icon={<Smile size={18} />} />
+              <SocialLink href="https://linkedin.com/in/pravinpaudel/" icon={<Linkedin size={18} />} />
               <SocialLink href="#" icon={<Youtube size={18} />} />
             </div>
           </div>
@@ -107,26 +108,26 @@ export default function VisualgoFooter() {
 }
 
 // Social media link component
-const SocialLink = ({ href, icon }) => (
-  <a
-    href={href}
-    className="bg-white/80 hover:bg-indigo-600 p-2 rounded-full text-gray-600 hover:text-white transition-all duration-200 shadow-sm hover:shadow-md"
-  >
-    {icon}
-  </a>
-);
+// const SocialLink = ({ href, icon }) => (
+//   <a
+//     href={href}
+//     className="bg-white/80 hover:bg-indigo-600 p-2 rounded-full text-gray-600 hover:text-white transition-all duration-200 shadow-sm hover:shadow-md"
+//   >
+//     {icon}
+//   </a>
+// );
 
 // Footer link component
-const FooterLink = ({ href, children }) => (
-  <li>
-    <a
-      href={href}
-      className="text-gray-600 hover:text-indigo-600 transition-colors duration-200 text-sm flex items-center group"
-    >
-      <span className="opacity-0 group-hover:opacity-100 transform translate-x-0 group-hover:-translate-x-2 transition-all duration-200">
-        <ArrowRight size={12} className="inline mr-1" />
-      </span>
-      {children}
-    </a>
-  </li>
-);
+// const FooterLink = ({ href, children }) => (
+//   <li>
+//     <a
+//       href={href}
+//       className="text-gray-600 hover:text-indigo-600 transition-colors duration-200 text-sm flex items-center group"
+//     >
+//       <span className="opacity-0 group-hover:opacity-100 transform translate-x-0 group-hover:-translate-x-2 transition-all duration-200">
+//         <ArrowRight size={12} className="inline mr-1" />
+//       </span>
+//       {children}
+//     </a>
+//   </li>
+// );

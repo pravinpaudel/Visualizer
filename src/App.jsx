@@ -8,6 +8,7 @@ import MergeSort from "./pages/MergeSort";
 import HeapSort from "./pages/HeapSort";
 import Dijkstras from "./pages/Dijkstras";
 import Kruskal from "./pages/Kruskal";
+import NQueens from "./pages/NQueens";
 
 function App() {
   return (
@@ -21,6 +22,7 @@ function App() {
           <Route path="/heapsort" element={<HeapSort />} />
           <Route path="/dijkstra" element={<Dijkstras />} />
           <Route path="/kruskal" element={<Kruskal />} />
+          <Route path="/nqueens" element={<NQueens />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

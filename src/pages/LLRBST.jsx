@@ -1,709 +1,747 @@
-import { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 
-// Constants
+// Define constants
 const RED = true;
 const BLACK = false;
 
-// Node class for the LLRBT - simplified by removing size and value
+// Node class for the LLRB tree
 class Node {
-  constructor(key, color = RED) {
-    this.key = key;
-    this.left = null;
-    this.right = null;
-    this.color = color;
-  }
+    constructor(key, value, color = RED) {
+        this.key = key;
+        this.value = value;
+        this.left = null;
+        this.right = null;
+        this.color = color;
+    }
 }
 
-const LLRBT = () => {
-  // Main component state
-  const [root, setRoot] = useState(null);
-  const [operations, setOperations] = useState([]);
-  const [inputKey, setInputKey] = useState('');
-  const [deleteKey, setDeleteKey] = useState('');
-  const [explanation, setExplanation] = useState('');
-  const [treeHistory, setTreeHistory] = useState([]);
-  const [historyIndex, setHistoryIndex] = useState(-1);
-  const canvasRef = useRef(null);
-
-  // Helper functions
-  const isRed = (node) => {
-    if (node === null) return false;
-    return node.color === RED;
-  };
-
-  // Tree operations
-  const rotateLeft = (h) => {
-    const x = h.right;
-    h.right = x.left;
-    x.left = h;
-    x.color = h.color;
-    h.color = RED;
-    return x;
-  };
-
-  const rotateRight = (h) => {
-    const x = h.left;
-    h.left = x.right;
-    x.right = h;
-    x.color = h.color;
-    h.color = RED;
-    return x;
-  };
-
-  const flipColors = (h) => {
-    h.color = !h.color;
-    if (h.left) h.left.color = !h.left.color;
-    if (h.right) h.right.color = !h.right.color;
-  };
-
-  // Min operation
-  const min = (node) => {
-    if (node.left === null) return node;
-    return min(node.left);
-  };
-
-  const moveRedLeft = (h) => {
-    addOperation(`Moving red link left at node ${h.key}`);
-    flipColors(h);
-    if (h.right && isRed(h.right.left)) {
-      addOperation(`Right child has red left child, rotating right then left`);
-      h.right = rotateRight(h.right);
-      h = rotateLeft(h);
-      flipColors(h);
-    }
-    return h;
-  };
-
-  const moveRedRight = (h) => {
-    addOperation(`Moving red link right at node ${h.key}`);
-    flipColors(h);
-    if (h.left && isRed(h.left.left)) {
-      addOperation(`Left child has red left child, rotating right`);
-      h = rotateRight(h);
-      flipColors(h);
-    }
-    return h;
-  };
-
-  const balance = (h) => {
-    if (h === null) return null;
-
-    if (isRed(h.right) && !isRed(h.left)) {
-      addOperation(`Balancing: right-leaning red link at ${h.key}, rotating left`);
-      h = rotateLeft(h);
-      addToHistory(deepCopy(h), [`Left rotation at node ${h.key}`]);
-    }
-    
-    if (isRed(h.left) && isRed(h.left.left)) {
-      addOperation(`Balancing: consecutive red links on left at ${h.key}, rotating right`);
-      h = rotateRight(h);
-      addToHistory(deepCopy(h), [`Right rotation at node ${h.key}`]);
-    }
-    
-    if (isRed(h.left) && isRed(h.right)) {
-      addOperation(`Balancing: both children red at ${h.key}, flipping colors`);
-      flipColors(h);
-      addToHistory(deepCopy(h), [`Color flip at node ${h.key}`]);
+// LLRB tree implementation
+class RedBlackBST {
+    constructor() {
+        this.root = null;
+        this.steps = [];
+        this.lastOperation = null;
     }
 
-    return h;
-  };
-
-  // Delete min operation with history tracking
-  const deleteMin = (h) => {
-    if (h.left === null) {
-      addOperation(`Reached leftmost node ${h.key}, removing it`);
-      addToHistory(null, [`Removed node ${h.key}`]);
-      return null;
+    isRed(node) {
+        if (node === null) return false;
+        return node.color === RED;
     }
 
-    if (!isRed(h.left) && !isRed(h.left.left)) {
-      addOperation(`Left child and its left child are both black, moving red left`);
-      const oldh = h;
-      h = moveRedLeft(h);
-      addToHistory(deepCopy(h), [`Moving red left at node ${oldh.key}`]);
+    rotateLeft(h) {
+        const x = h.right;
+        h.right = x.left;
+        x.left = h;
+        x.color = h.color;
+        h.color = RED;
+        return x;
     }
 
-    h.left = deleteMin(h.left);
-    addOperation(`Balancing after deleteMin operation`);
-    h = balance(h);
-    return h;
-  };
-
-  // Put operation with history tracking
-  const put = (node, key) => {
-    // If tree is empty, create new node
-    if (node === null) {
-      addOperation(`Creating new RED node with key ${key}`);
-      const newNode = new Node(key);
-      addToHistory(deepCopy(newNode), [`Created new RED node with key ${key}`]);
-      return newNode;
+    rotateRight(h) {
+        const x = h.left;
+        h.left = x.right;
+        x.right = h;
+        x.color = h.color;
+        h.color = RED;
+        return x;
     }
 
-    let cmp = key - node.key;
-    
-    if (cmp < 0) {
-      addOperation(`Key ${key} is less than ${node.key}, going left`);
-      addToHistory(deepCopy(node), [`Going left from node ${node.key} to insert ${key}`]);
-      node.left = put(node.left, key);
-    } else if (cmp > 0) {
-      addOperation(`Key ${key} is greater than ${node.key}, going right`);
-      addToHistory(deepCopy(node), [`Going right from node ${node.key} to insert ${key}`]);
-      node.right = put(node.right, key);
-    } else {
-      addOperation(`Key ${key} already exists, no change needed`);
-      addToHistory(deepCopy(node), [`Key ${key} already exists, no change needed`]);
-      return node;
+    flipColors(h) {
+        h.color = !h.color;
+        h.left.color = !h.left.color;
+        h.right.color = !h.right.color;
     }
 
-    // Fix-up any right-leaning links
-    if (isRed(node.right) && !isRed(node.left)) {
-      addOperation(`Found right-leaning red link at node ${node.key}, rotating left`);
-      const oldNode = node;
-      node = rotateLeft(node);
-      addToHistory(deepCopy(node), [`Left rotation at node ${oldNode.key}`]);
-    }
-    
-    if (isRed(node.left) && isRed(node.left.left)) {
-      addOperation(`Found consecutive red links on left at node ${node.key}, rotating right`);
-      const oldNode = node;
-      node = rotateRight(node);
-      addToHistory(deepCopy(node), [`Right rotation at node ${oldNode.key}`]);
-    }
-    
-    if (isRed(node.left) && isRed(node.right)) {
-      addOperation(`Found red children on both sides at node ${node.key}, flipping colors`);
-      flipColors(node);
-      addToHistory(deepCopy(node), [`Color flip at node ${node.key}`]);
-    }
-    
-    return node;
-  };
+    put(key, value) {
+        this.steps = [];
+        this.lastOperation = { type: 'insert', key };
+        this.steps.push({
+            tree: this.cloneTree(this.root),
+            message: `Starting insertion of key ${key}`,
+            highlighted: null
+        });
 
-  // Delete operation with history tracking
-  const deleteNode = (h, key) => {
-    addToHistory(deepCopy(h), [`Searching for key ${key} to delete`]);
-    
-    if (key < h.key) {
-      addOperation(`Key ${key} is less than ${h.key}, going left to delete`);
-      addToHistory(deepCopy(h), [`Going left from node ${h.key} to delete ${key}`]);
-      
-      if (!isRed(h.left) && h.left && !isRed(h.left.left)) {
-        addOperation(`Left child and its left child are both black, moving red left`);
-        const oldh = h;
-        h = moveRedLeft(h);
-        addToHistory(deepCopy(h), [`Moving red left at node ${oldh.key}`]);
-      }
-      
-      h.left = deleteNode(h.left, key);
-    } else {
-      if (isRed(h.left)) {
-        addOperation(`Left child is red, rotating right to prepare for deletion`);
-        const oldh = h;
-        h = rotateRight(h);
-        addToHistory(deepCopy(h), [`Right rotation at node ${oldh.key}`]);
-      }
-      
-      if (key === h.key && h.right === null) {
-        addOperation(`Found key ${key} with no right child, removing it`);
-        addToHistory(null, [`Removed node ${key}`]);
+        this.root = this._put(this.root, key, value);
+        this.root.color = BLACK; // Root is always black
+
+        this.steps.push({
+            tree: this.cloneTree(this.root),
+            message: `Insertion of key ${key} completed. Root is set to BLACK.`,
+            highlighted: null
+        });
+
+        return this.steps;
+    }
+
+    _put(h, key, value) {
+        if (h === null) {
+            this.steps.push({
+                tree: this.cloneTree(this.root),
+                message: `Creating new RED node with key ${key}`,
+                highlighted: { key, operation: 'insert' }
+            });
+            return new Node(key, value, RED);
+        }
+
+        this.steps.push({
+            tree: this.cloneTree(this.root),
+            message: `Comparing key ${key} with node ${h.key}`,
+            highlighted: { key: h.key }
+        });
+
+        if (key < h.key) {
+            this.steps.push({
+                tree: this.cloneTree(this.root),
+                message: `Key ${key} is less than ${h.key}, traversing left`,
+                highlighted: { key: h.key, direction: 'left' }
+            });
+            h.left = this._put(h.left, key, value);
+        } else if (key > h.key) {
+            this.steps.push({
+                tree: this.cloneTree(this.root),
+                message: `Key ${key} is greater than ${h.key}, traversing right`,
+                highlighted: { key: h.key, direction: 'right' }
+            });
+            h.right = this._put(h.right, key, value);
+        } else {
+            this.steps.push({
+                tree: this.cloneTree(this.root),
+                message: `Key ${key} already exists, updating value`,
+                highlighted: { key: h.key, operation: 'update' }
+            });
+            h.value = value;
+        }
+
+        // Fix-up any right-leaning links
+        if (this.isRed(h.right) && !this.isRed(h.left)) {
+            this.steps.push({
+                tree: this.cloneTree(this.root),
+                message: `Right child is RED but left child is BLACK at node ${h.key}. Performing left rotation.`,
+                highlighted: { key: h.key, operation: 'rotateLeft' }
+            });
+            h = this.rotateLeft(h);
+        }
+
+        if (this.isRed(h.left) && this.isRed(h.left.left)) {
+            this.steps.push({
+                tree: this.cloneTree(this.root),
+                message: `Left child and left-left grandchild are both RED at node ${h.key}. Performing right rotation.`,
+                highlighted: { key: h.key, operation: 'rotateRight' }
+            });
+            h = this.rotateRight(h);
+        }
+
+        if (this.isRed(h.left) && this.isRed(h.right)) {
+            this.steps.push({
+                tree: this.cloneTree(this.root),
+                message: `Both children are RED at node ${h.key}. Flipping colors.`,
+                highlighted: { key: h.key, operation: 'flipColors' }
+            });
+            this.flipColors(h);
+        }
+
+        return h;
+    }
+
+    delete(key) {
+        if (this.root === null) return [];
+
+        this.steps = [];
+        this.lastOperation = { type: 'delete', key };
+        this.steps.push({
+            tree: this.cloneTree(this.root),
+            message: `Starting deletion of key ${key}`,
+            highlighted: null
+        });
+
+        if (!this.isRed(this.root.left) && !this.isRed(this.root.right)) {
+            this.steps.push({
+                tree: this.cloneTree(this.root),
+                message: `Both children of root are BLACK, temporarily setting root to RED`,
+                highlighted: { key: this.root.key, operation: 'setRootRed' }
+            });
+            this.root.color = RED;
+        }
+
+        this.root = this._delete(this.root, key);
+
+        if (this.root !== null) {
+            this.steps.push({
+                tree: this.cloneTree(this.root),
+                message: `Deletion completed, setting root back to BLACK`,
+                highlighted: { key: this.root.key, operation: 'setRootBlack' }
+            });
+            this.root.color = BLACK;
+        } else {
+            this.steps.push({
+                tree: null,
+                message: `Tree is now empty after deleting ${key}`,
+                highlighted: null
+            });
+        }
+
+        return this.steps;
+    }
+
+    _delete(h, key) {
+        if (h === null) {
+            this.steps.push({
+                tree: this.cloneTree(this.root),
+                message: `Key ${key} not found in the tree`,
+                highlighted: null
+            });
+            return null;
+        }
+
+        this.steps.push({
+            tree: this.cloneTree(this.root),
+            message: `Comparing key ${key} with node ${h.key}`,
+            highlighted: { key: h.key }
+        });
+
+        if (key < h.key) {
+            this.steps.push({
+                tree: this.cloneTree(this.root),
+                message: `Key ${key} is less than ${h.key}, traversing left`,
+                highlighted: { key: h.key, direction: 'left' }
+            });
+
+            if (!this.isRed(h.left) && h.left !== null && !this.isRed(h.left.left)) {
+                this.steps.push({
+                    tree: this.cloneTree(this.root),
+                    message: `Moving RED to the left to ensure we can traverse down`,
+                    highlighted: { key: h.key, operation: 'moveRedLeft' }
+                });
+                h = this.moveRedLeft(h);
+            }
+
+            h.left = this._delete(h.left, key);
+        } else {
+            if (this.isRed(h.left)) {
+                this.steps.push({
+                    tree: this.cloneTree(this.root),
+                    message: `Left child is RED at node ${h.key}. Performing right rotation.`,
+                    highlighted: { key: h.key, operation: 'rotateRight' }
+                });
+                h = this.rotateRight(h);
+            }
+
+            if (key === h.key && h.right === null) {
+                this.steps.push({
+                    tree: this.cloneTree(this.root),
+                    message: `Found key ${key} with no right child, removing node`,
+                    highlighted: { key: h.key, operation: 'remove' }
+                });
+                return null;
+            }
+
+            if (!this.isRed(h.right) && h.right !== null && !this.isRed(h.right.left)) {
+                this.steps.push({
+                    tree: this.cloneTree(this.root),
+                    message: `Moving RED to the right to ensure we can traverse down`,
+                    highlighted: { key: h.key, operation: 'moveRedRight' }
+                });
+                h = this.moveRedRight(h);
+            }
+
+            if (key === h.key) {
+                this.steps.push({
+                    tree: this.cloneTree(this.root),
+                    message: `Found key ${key} with right child, replacing with minimum key in right subtree`,
+                    highlighted: { key: h.key, operation: 'replaceWithSuccessor' }
+                });
+                const minNode = this.min(h.right);
+                h.key = minNode.key;
+                h.value = minNode.value;
+                h.right = this.deleteMin(h.right);
+            } else {
+                this.steps.push({
+                    tree: this.cloneTree(this.root),
+                    message: `Key ${key} is greater than ${h.key}, traversing right`,
+                    highlighted: { key: h.key, direction: 'right' }
+                });
+                h.right = this._delete(h.right, key);
+            }
+        }
+
+        this.steps.push({
+            tree: this.cloneTree(this.root),
+            message: `Balancing tree at node ${h.key}`,
+            highlighted: { key: h.key, operation: 'balance' }
+        });
+
+        return this.balance(h);
+    }
+
+    moveRedLeft(h) {
+        this.flipColors(h);
+
+        if (h.right !== null && this.isRed(h.right.left)) {
+            this.steps.push({
+                tree: this.cloneTree(this.root),
+                message: `Right-left grandchild is RED at node ${h.key}. Right rotation on right child followed by left rotation.`,
+                highlighted: { key: h.key, operation: 'complexRotation' }
+            });
+            h.right = this.rotateRight(h.right);
+            h = this.rotateLeft(h);
+            this.flipColors(h);
+        }
+
+        return h;
+    }
+
+    moveRedRight(h) {
+        this.flipColors(h);
+
+        if (h.left !== null && this.isRed(h.left.left)) {
+            this.steps.push({
+                tree: this.cloneTree(this.root),
+                message: `Left-left grandchild is RED at node ${h.key}. Performing right rotation.`,
+                highlighted: { key: h.key, operation: 'rotateRight' }
+            });
+            h = this.rotateRight(h);
+            this.flipColors(h);
+        }
+
+        return h;
+    }
+
+    min(node) {
+        if (node.left === null) return node;
+        return this.min(node.left);
+    }
+
+    deleteMin(h) {
+        if (h.left === null) {
+            this.steps.push({
+                tree: this.cloneTree(this.root),
+                message: `Found minimum node ${h.key}, removing it`,
+                highlighted: { key: h.key, operation: 'remove' }
+            });
+            return null;
+        }
+
+        if (!this.isRed(h.left) && h.left !== null && !this.isRed(h.left.left)) {
+            this.steps.push({
+                tree: this.cloneTree(this.root),
+                message: `Moving RED to the left to continue traversal at node ${h.key}`,
+                highlighted: { key: h.key, operation: 'moveRedLeft' }
+            });
+            h = this.moveRedLeft(h);
+        }
+
+        h.left = this.deleteMin(h.left);
+
+        this.steps.push({
+            tree: this.cloneTree(this.root),
+            message: `Balancing tree at node ${h.key} after minimum deletion`,
+            highlighted: { key: h.key, operation: 'balance' }
+        });
+
+        return this.balance(h);
+    }
+
+    balance(h) {
+        if (h === null) return null;
+
+        if (this.isRed(h.right) && !this.isRed(h.left)) {
+            this.steps.push({
+                tree: this.cloneTree(this.root),
+                message: `Right child is RED but left child is not at node ${h.key}. Performing left rotation.`,
+                highlighted: { key: h.key, operation: 'rotateLeft' }
+            });
+            h = this.rotateLeft(h);
+        }
+
+        if (this.isRed(h.left) && this.isRed(h.left.left)) {
+            this.steps.push({
+                tree: this.cloneTree(this.root),
+                message: `Left child and left-left grandchild are both RED at node ${h.key}. Performing right rotation.`,
+                highlighted: { key: h.key, operation: 'rotateRight' }
+            });
+            h = this.rotateRight(h);
+        }
+
+        if (this.isRed(h.left) && this.isRed(h.right)) {
+            this.steps.push({
+                tree: this.cloneTree(this.root),
+                message: `Both children are RED at node ${h.key}. Flipping colors.`,
+                highlighted: { key: h.key, operation: 'flipColors' }
+            });
+            this.flipColors(h);
+        }
+
+        return h;
+    }
+
+    get(key) {
+        let node = this.root;
+        while (node !== null) {
+            if (key < node.key) node = node.left;
+            else if (key > node.key) node = node.right;
+            else return node.value;
+        }
         return null;
-      }
-      
-      if (!isRed(h.right) && h.right && !isRed(h.right.left)) {
-        addOperation(`Right child and its left child are both black, moving red right`);
-        const oldh = h;
-        h = moveRedRight(h);
-        addToHistory(deepCopy(h), [`Moving red right at node ${oldh.key}`]);
-      }
-      
-      if (key === h.key) {
-        addOperation(`Found key ${key}, replacing with minimum from right subtree`);
-        const x = min(h.right);
-        addToHistory(deepCopy(h), [`Found minimum key ${x.key} in right subtree to replace ${key}`]);
-        
-        h.key = x.key;
-        addToHistory(deepCopy(h), [`Replaced key ${key} with ${x.key}`]);
-        
-        addOperation(`Now will delete the minimum key from right subtree`);
-        h.right = deleteMin(h.right);
-      } else {
-        addOperation(`Key ${key} is greater than ${h.key}, going right to delete`);
-        addToHistory(deepCopy(h), [`Going right from node ${h.key} to delete ${key}`]);
-        
-        h.right = deleteNode(h.right, key);
-      }
     }
-    
-    addOperation(`Balancing after delete operation at node ${h.key}`);
-    h = balance(h);
-    
-    return h;
-  };
 
-  // UI handlers
-  const handleInsert = () => {
-    if (inputKey.trim() === '' || isNaN(parseInt(inputKey))) {
-      setExplanation('Please enter a valid numeric key');
-      return;
+    contains(key) {
+        return this.get(key) !== null;
     }
-    
-    const key = parseInt(inputKey);
-    
-    // Reset operations
-    setOperations([]);
-    
-    // Clear previous history
-    setTreeHistory([]);
-    setHistoryIndex(-1);
 
-    // Start with a clean copy of the tree
-    let newRoot = deepCopy(root);
-
-    // Perform insertion with history tracking
-    newRoot = put(newRoot, key);
-    
-    // Add initial state to history
-    addToHistory(deepCopy(newRoot), [`Ended insertion of key ${key}`]);
-    
-    // // Perform insertion with history tracking
-    // newRoot = put(newRoot, key);
-    
-    if (root === null) {
-      addOperation(`Setting root to BLACK as per LLRBT rules`);
-      newRoot.color = BLACK;
-      addToHistory(deepCopy(newRoot), [`Setting root to BLACK as per LLRBT rules`]);
+    // Helper method to clone the tree for visualization steps
+    cloneTree(node) {
+        if (node === null) return null;
+        const newNode = new Node(node.key, node.value, node.color);
+        newNode.left = this.cloneTree(node.left);
+        newNode.right = this.cloneTree(node.right);
+        return newNode;
     }
-    
-    setRoot(newRoot);
-    setInputKey('');
-    setExplanation(`Inserted key ${key}. Use Previous/Next State to see each step.`);
-    
-    // Set to first state to begin step-by-step viewing
-    if (treeHistory.length > 0) {
-      setHistoryIndex(0);
-    }
-  };
+}
 
-  const handleDelete = () => {
-    if (deleteKey.trim() === '' || isNaN(parseInt(deleteKey)) || root === null) {
-      setExplanation('Please enter a valid numeric key to delete');
-      return;
-    }
-    
-    const key = parseInt(deleteKey);
-    
-    // Reset operations
-    setOperations([]);
-    
-    // Clear previous history
-    setTreeHistory([]);
-    setHistoryIndex(-1);
-    
-    try {
-      let newRoot = deepCopy(root);
-      
-      // Add initial state to history
-      addToHistory(deepCopy(newRoot), [`Starting deletion of key ${key}`]);
-      
-      // LLRBT delete operation
-      if (!isRed(newRoot.left) && !isRed(newRoot.right)) {
-        addOperation(`Setting root to RED for delete operation`);
-        newRoot.color = RED;
-        addToHistory(deepCopy(newRoot), [`Setting root to RED for delete operation`]);
-      }
-      
-      newRoot = deleteNode(newRoot, key);
-      
-      if (newRoot !== null) {
-        addOperation(`Setting root back to BLACK after delete operation`);
-        newRoot.color = BLACK;
-        addToHistory(deepCopy(newRoot), [`Setting root back to BLACK after delete operation`]);
-      }
-      
-      setRoot(newRoot);
-      setDeleteKey('');
-      setExplanation(`Deleted key ${key}. Use Previous/Next State to see each step.`);
-      
-      // Set to first state to begin step-by-step viewing
-      if (treeHistory.length > 0) {
-        setHistoryIndex(0);
-      }
-    } catch (error) {
-      setExplanation(`Error deleting key ${key}: ${error.message}`);
-    }
-  };
+// Main component
+export default function LLRBVisualization() {
+    const [tree] = useState(new RedBlackBST());
+    const [treeRoot, setTreeRoot] = useState(null);
+    const [inputKey, setInputKey] = useState('');
+    const [operations, setOperations] = useState([]);
+    const [currentStepIndex, setCurrentStepIndex] = useState(0);
+    const [animationSpeed, setAnimationSpeed] = useState(1000);
+    const [isAnimating, setIsAnimating] = useState(false);
+    const [autoPlay, setAutoPlay] = useState(false);
+    const timerRef = useRef(null);
 
-  // Utility functions
-  const addOperation = (description) => {
-    setOperations(prev => [...prev, description]);
-  };
+    // Function to insert a key
+    const handleInsert = () => {
+        if (!inputKey.trim()) return;
+        const key = parseInt(inputKey, 10);
+        if (isNaN(key)) return;
 
-  const deepCopy = (node) => {
-    if (node === null) return null;
-    const copy = new Node(node.key, node.color);
-    copy.left = deepCopy(node.left);
-    copy.right = deepCopy(node.right);
-    return copy;
-  };
+        const steps = tree.put(key, key);
+        setTreeRoot(tree.root);
+        setOperations(steps);
+        setCurrentStepIndex(0);
+        setInputKey('');
+    };
 
-  const addToHistory = (newRoot, specificOperations = null) => {
-    // Add to history
-    setTreeHistory(prev => [
-      ...prev,
-      { 
-        root: newRoot, 
-        operations: specificOperations || [...operations] 
-      }
-    ]);
-  };
+    // Function to delete a key
+    const handleDelete = () => {
+        if (!inputKey.trim()) return;
+        const key = parseInt(inputKey, 10);
+        if (isNaN(key)) return;
 
-  const handlePrevStep = () => {
-    if (historyIndex > 0) {
-      const newIndex = historyIndex - 1;
-      setHistoryIndex(newIndex);
-      
-      const currentState = treeHistory[newIndex];
-      setRoot(deepCopy(currentState.root));
-      
-      // Get a meaningful description of the current operation
-      let description = "Unknown operation";
-      if (currentState.operations && currentState.operations.length > 0) {
-        description = currentState.operations[0];
-      }
-      
-      setExplanation(`Step ${newIndex + 1} of ${treeHistory.length}: ${description}`);
-    }
-  };
+        const steps = tree.delete(key);
+        setTreeRoot(tree.root);
+        setOperations(steps);
+        setCurrentStepIndex(0);
+        setInputKey('');
+    };
 
-  const handleNextStep = () => {
-    if (historyIndex < treeHistory.length - 1) {
-      const newIndex = historyIndex + 1;
-      setHistoryIndex(newIndex);
-      
-      const currentState = treeHistory[newIndex];
-      setRoot(deepCopy(currentState.root));
-      
-      // Get a meaningful description of the current operation
-      let description = "Unknown operation";
-      if (currentState.operations && currentState.operations.length > 0) {
-        description = currentState.operations[0];
-      }
-      
-      setExplanation(`Step ${newIndex + 1} of ${treeHistory.length}: ${description}`);
-    }
-  };
+    // Navigate through steps
+    const nextStep = () => {
+        if (currentStepIndex < operations.length - 1) {
+            setCurrentStepIndex(prevIndex => prevIndex + 1);
+        } else if (autoPlay) {
+            setAutoPlay(false);
+        }
+    };
 
-  const handleExample = () => {
-    setRoot(null);
-    setOperations([]);
-    setTreeHistory([]);
-    setHistoryIndex(-1);
-    
-    // Clear the canvas
-    if (canvasRef.current) {
-      const canvas = canvasRef.current;
-      const ctx = canvas.getContext('2d');
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-    }
-    
-    // Example values
-    const exampleValues = [7, 3, 18, 10, 22, 8, 11, 26, 2, 6, 13];
-    
-    // Add initial empty state to history
-    addToHistory(null, ["Starting with empty tree"]);
-    
-    // Insert values one by one
-    let tempRoot = null;
-    
-    exampleValues.forEach((value, index) => {
-      addOperation(`Inserting key ${value} (${index + 1}/${exampleValues.length})`);
-      tempRoot = put(tempRoot, value);
-      
-      if (tempRoot) {
-        tempRoot.color = BLACK;
-        addToHistory(deepCopy(tempRoot), [`Setting root to BLACK after inserting key ${value}`]);
-      }
-    });
-    
-    // Set to the final state
-    setRoot(tempRoot);
-    
-    // Set to the first state to allow stepping through
-    if (treeHistory.length > 0) {
-      setHistoryIndex(0);
-      
-      // Set the current root to the first state
-      const firstState = treeHistory[0];
-      setRoot(deepCopy(firstState.root));
-      
-      setExplanation(`Created example tree with values: ${exampleValues.join(", ")}. Use Next State to step through each operation.`);
-    }
-  };
+    const prevStep = () => {
+        if (currentStepIndex > 0) {
+            setCurrentStepIndex(prevIndex => prevIndex - 1);
+        }
+    };
 
-  const handleClear = () => {
-    setRoot(null);
-    setOperations([]);
-    setTreeHistory([]);
-    setHistoryIndex(-1);
-    setExplanation("Tree cleared");
-    
-    // Clear the canvas
-    if (canvasRef.current) {
-      const canvas = canvasRef.current;
-      const ctx = canvas.getContext('2d');
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-    }
-  };
+    // Toggle autoplay
+    const toggleAutoPlay = () => {
+        setAutoPlay(!autoPlay);
+    };
 
-  // Canvas rendering
-  useEffect(() => {
-    if (!canvasRef.current) return;
-    
-    const canvas = canvasRef.current;
-    const ctx = canvas.getContext('2d');
-    const treeDepth = getTreeDepth(root);
-    
-    // Calculate canvas dimensions based on tree depth and width
-    const nodeRadius = 20;
-    const levelHeight = 80;
-    const canvasHeight = (treeDepth + 1) * levelHeight;
-    const canvasWidth = Math.max(800, Math.pow(2, treeDepth) * 70);
-    
-    canvas.width = canvasWidth;
-    canvas.height = canvasHeight;
-    
-    ctx.clearRect(0, 0, canvasWidth, canvasHeight);
-    
-    if (root) {
-      drawTree(ctx, root, canvasWidth / 2, nodeRadius + 10, canvasWidth / 4, levelHeight);
-    }
-  }, [root]);
+    // Effect for auto-playing animation
+    useEffect(() => {
+        if (autoPlay && operations.length > 0) {
+            setIsAnimating(true);
+            timerRef.current = setTimeout(() => {
+                if (currentStepIndex < operations.length - 1) {
+                    nextStep();
+                } else {
+                    setAutoPlay(false);
+                    setIsAnimating(false);
+                }
+            }, animationSpeed);
+        } else {
+            setIsAnimating(false);
+        }
 
-  // Tree visualization functions
-  const getTreeDepth = (node) => {
-    if (node === null) return 0;
-    return 1 + Math.max(getTreeDepth(node.left), getTreeDepth(node.right));
-  };
+        return () => {
+            if (timerRef.current) {
+                clearTimeout(timerRef.current);
+            }
+        };
+    }, [autoPlay, currentStepIndex, operations.length, animationSpeed]);
 
-  const drawTree = (ctx, node, x, y, horizontalSpacing, levelHeight) => {
-    if (node === null) return;
-    
-    const nodeRadius = 20;
-    
-    // Draw connections to children first (behind nodes)
-    if (node.left) {
-      const childX = x - horizontalSpacing;
-      const childY = y + levelHeight;
-      
-      // Draw edge to left child
-      ctx.beginPath();
-      ctx.moveTo(x, y);
-      ctx.lineTo(childX, childY);
-      ctx.strokeStyle = node.left.color === RED ? '#FF4136' : '#333';
-      ctx.lineWidth = node.left.color === RED ? 3 : 2;
-      ctx.stroke();
-      
-      // Recursively draw left subtree
-      drawTree(ctx, node.left, childX, childY, horizontalSpacing / 2, levelHeight);
-    }
-    
-    if (node.right) {
-      const childX = x + horizontalSpacing;
-      const childY = y + levelHeight;
-      
-      // Draw edge to right child
-      ctx.beginPath();
-      ctx.moveTo(x, y);
-      ctx.lineTo(childX, childY);
-      ctx.strokeStyle = node.right.color === RED ? '#FF4136' : '#333';
-      ctx.lineWidth = node.right.color === RED ? 3 : 2;
-      ctx.stroke();
-      
-      // Recursively draw right subtree
-      drawTree(ctx, node.right, childX, childY, horizontalSpacing / 2, levelHeight);
-    }
-    
-    // Draw node
-    ctx.beginPath();
-    ctx.arc(x, y, nodeRadius, 0, Math.PI * 2);
-    ctx.fillStyle = node.color === RED ? '#FFCCCB' : '#FFF';
-    ctx.strokeStyle = node.color === RED ? '#FF4136' : '#333';
-    ctx.lineWidth = 2;
-    ctx.fill();
-    ctx.stroke();
-    
-    // Draw key text
-    ctx.fillStyle = '#333';
-    ctx.font = 'bold 14px Arial';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(node.key, x, y);
-  };
+    // Tree visualization component
+    const TreeVisualization = ({ root, highlighted }) => {
+        if (!root) return <div className="flex justify-center items-center h-64 text-gray-500">Tree is empty</div>;
 
-  return (
-    <div className="flex flex-col min-h-screen p-4 bg-gray-50">
-      <h1 className="text-3xl font-bold text-center mb-6 text-gray-800">
-        Interactive Left-Leaning Red-Black Tree Visualization
-      </h1>
-      
-      <div className="bg-white rounded-lg shadow-md p-4 mb-6">
-        <div className="mb-4">
-          <div className="flex flex-wrap gap-4 mb-4">
-            {/* Insert Controls */}
-            <div className="flex items-center gap-2">
-              <input
-                type="text"
-                placeholder="Key (number)"
-                className="border rounded p-2 w-32"
-                value={inputKey}
-                onChange={(e) => setInputKey(e.target.value)}
-              />
-              <button
-                className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
-                onClick={handleInsert}
-              >
-                Insert
-              </button>
+        const calculateTreeLayout = (node, x = 0, y = 0, level = 0) => {
+            if (!node) return null;
+
+            const horizontalSpacing = 120 / (level + 1);
+            const verticalSpacing = 70;
+
+            const currentNode = {
+                key: node.key,
+                x,
+                y,
+                color: node.color
+            };
+
+            let nodes = [currentNode];
+            let edges = [];
+
+            if (node.left) {
+                const leftX = x - horizontalSpacing;
+                const leftY = y + verticalSpacing;
+
+                edges.push({
+                    x1: x,
+                    y1: y,
+                    x2: leftX,
+                    y2: leftY,
+                    color: node.left.color
+                });
+
+                const leftSubtree = calculateTreeLayout(node.left, leftX, leftY, level + 1);
+                nodes = [...nodes, ...leftSubtree.nodes];
+                edges = [...edges, ...leftSubtree.edges];
+            }
+
+            if (node.right) {
+                const rightX = x + horizontalSpacing;
+                const rightY = y + verticalSpacing;
+
+                edges.push({
+                    x1: x,
+                    y1: y,
+                    x2: rightX,
+                    y2: rightY,
+                    color: node.right.color
+                });
+
+                const rightSubtree = calculateTreeLayout(node.right, rightX, rightY, level + 1);
+                nodes = [...nodes, ...rightSubtree.nodes];
+                edges = [...edges, ...rightSubtree.edges];
+            }
+
+            return { nodes, edges };
+        };
+
+        const layout = calculateTreeLayout(root);
+        if (!layout) return null;
+
+        const { nodes, edges } = layout;
+
+        // Find min and max X to center the tree
+        const minX = Math.min(...nodes.map(node => node.x));
+        const maxX = Math.max(...nodes.map(node => node.x));
+        const centerOffset = (minX + maxX) / 2;
+
+        // Calculate the needed height based on tree depth
+        const maxY = Math.max(...nodes.map(node => node.y)) + 20;
+        // Calculate the needed width based on tree spread
+        const treeWidth = Math.max(400, maxX - minX + 100);
+
+        return (
+            <div className="relative w-full" style={{ height: `${Math.max(300, maxY)}px` }}>
+                <svg className="absolute top-0 left-0 w-full h-full" viewBox={`${-treeWidth / 2} -20 ${treeWidth} ${maxY + 40}`}>
+                    {/* Draw edges */}
+                    {edges.map((edge, index) => (
+                        <line
+                            key={`edge-${index}`}
+                            x1={edge.x1 - centerOffset}
+                            y1={edge.y1}
+                            x2={edge.x2 - centerOffset}
+                            y2={edge.y2}
+                            stroke={edge.color ? '#f87171' : '#64748b'}
+                            strokeWidth="2"
+                        />
+                    ))}
+
+                    {/* Draw nodes */}
+                    {nodes.map((node, index) => {
+                        const isHighlighted = highlighted && highlighted.key === node.key;
+                        let highlightColor = '#3b82f6'; // Default highlight color
+
+                        if (isHighlighted && highlighted.operation) {
+                            switch (highlighted.operation) {
+                                case 'rotateLeft': highlightColor = '#ef4444'; break; // Red
+                                case 'rotateRight': highlightColor = '#eab308'; break; // Yellow
+                                case 'flipColors': highlightColor = '#8b5cf6'; break; // Purple
+                                case 'insert': highlightColor = '#22c55e'; break; // Green
+                                case 'remove': highlightColor = '#ef4444'; break; // Red
+                                case 'update': highlightColor = '#3b82f6'; break; // Blue
+                                default: highlightColor = '#3b82f6'; // Default blue
+                            }
+                        }
+
+                        return (
+                            <g key={`node-${index}`} transform={`translate(${node.x - centerOffset},${node.y})`}>
+                                <circle
+                                    r="15"
+                                    fill={isHighlighted ? highlightColor : (node.color ? '#fff' : '#94a3b8')}
+                                    stroke={node.color ? '#f87171' : '#334155'}
+                                    strokeWidth={isHighlighted ? "3" : "2"}
+                                    className="transition-all duration-300"
+                                />
+                                <text
+                                    x="0"
+                                    y="5"
+                                    textAnchor="middle"
+                                    fontSize="12"
+                                    fill={isHighlighted ? '#fff' : '#334155'}
+                                    className="transition-all duration-300"
+                                >
+                                    {node.key}
+                                </text>
+                            </g>
+                        );
+                    })}
+                </svg>
             </div>
-            
-            {/* Delete Controls */}
-            <div className="flex items-center gap-2">
-              <input
-                type="text"
-                placeholder="Key to delete"
-                className="border rounded p-2 w-32"
-                value={deleteKey}
-                onChange={(e) => setDeleteKey(e.target.value)}
-              />
-              <button
-                className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600"
-                onClick={handleDelete}
-                disabled={!root}
-              >
-                Delete
-              </button>
-            </div>
-            
-            {/* Example and Clear */}
-            <div className="flex items-center gap-2">
-              <button
-                className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600"
-                onClick={handleExample}
-              >
-                Load Example
-              </button>
-              <button
-                className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600"
-                onClick={handleClear}
-                disabled={!root}
-              >
-                Clear Tree
-              </button>
-            </div>
-          </div>
-          
-          {/* Navigation Controls */}
-          <div className="flex justify-center items-center gap-4 mb-4">
-            <button
-              className="bg-gray-200 px-4 py-2 rounded hover:bg-gray-300 disabled:opacity-50"
-              onClick={handlePrevStep}
-              disabled={historyIndex <= 0}
-            >
-              ◀ Previous State
-            </button>
-            <span className="text-gray-600">
-              {treeHistory.length > 0 ? `${historyIndex + 1} / ${treeHistory.length}` : '0 / 0'}
-            </span>
-            <button
-              className="bg-gray-200 px-4 py-2 rounded hover:bg-gray-300 disabled:opacity-50"
-              onClick={handleNextStep}
-              disabled={historyIndex >= treeHistory.length - 1}
-            >
-              Next State ▶
-            </button>
-          </div>
-        </div>
-        
-        {/* Legend */}
-        <div className="flex justify-center items-center gap-6 mb-4">
-          <div className="flex items-center gap-2">
-            <div className="w-4 h-4 rounded-full bg-white border-2 border-gray-800"></div>
-            <span>Black Node</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-4 h-4 rounded-full bg-pink-100 border-2 border-red-500"></div>
-            <span>Red Node</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-6 h-0.5 bg-red-500"></div>
-            <span>Red Link</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-6 h-0.5 bg-gray-800"></div>
-            <span>Black Link</span>
-          </div>
-        </div>
-        
-        {/* Explanation */}
-        <div className="bg-blue-50 border border-blue-100 rounded-lg p-3 mb-4">
-          <h3 className="font-semibold text-blue-800 mb-1">Current Operation:</h3>
-          <p className="text-blue-700">{explanation}</p>
-        </div>
-      </div>
-      
-      {/* Tree Visualization */}
-      <div className="flex flex-col md:flex-row gap-4 flex-1">
-        <div className="flex-1 bg-white rounded-lg shadow-md p-4 overflow-auto">
-          <h2 className="text-xl font-semibold mb-3 text-gray-700">Tree Visualization</h2>
-          <div className="border border-gray-200 rounded-lg overflow-auto p-2 min-h-64 flex justify-center">
-            <canvas ref={canvasRef} className="mx-auto"></canvas>
-            {!root && (
-              <div className="flex items-center justify-center h-64 text-gray-500">
-                Tree is empty. Insert some nodes or load an example.
-              </div>
-            )}
-          </div>
-        </div>
-        
-        {/* Operation Log - Now flex-grow to adjust size */}
-        <div className="w-full md:w-80 lg:w-96 bg-white rounded-lg shadow-md p-4 flex flex-col">
-          <h2 className="text-xl font-semibold mb-3 text-gray-700">Operation Steps</h2>
-          <div className="border border-gray-200 rounded-lg overflow-auto p-2 h-80">
-            {treeHistory.length === 0 ? (
-              <div className="text-gray-500 p-2">No operations performed yet.</div>
-            ) : (
-              <ol className="list-decimal list-inside">
-                {treeHistory.map((state, index) => (
-                  <li 
-                    key={index} 
-                    className={`py-1 border-b border-gray-100 last:border-0 ${index === historyIndex ? 'bg-yellow-50 font-semibold' : ''}`}
-                  >
-                    {state.operations && state.operations.length > 0 ? state.operations[0] : "Unknown operation"}
-                  </li>
-                ))}
-              </ol>
-            )}
-          </div>
-        </div>
-      </div>
-      
-      {/* LLRBT Properties */}
-      <div className="bg-white rounded-lg shadow-md p-4 mt-6">
-        <h2 className="text-xl font-semibold mb-3 text-gray-700">Left-Leaning Red-Black Tree Properties</h2>
-        <ul className="list-disc list-inside space-y-2 text-gray-700">
-          <li>No node has two red links connected to it</li>
-          <li>Every path from root to null link has the same number of black links</li>
-          <li>Red links lean left (a red node is always a left child)</li>
-          <li>The root is always black</li>
-          <li>The height of the tree is at most 2 × log₂(n)</li>
-          <li>Operations (insert, delete, search) are guaranteed to be logarithmic in time</li>
-        </ul>
-      </div>
-      <Footer />
-    </div>
-  );
-};
+        );
+    };
 
-export default LLRBT;
+    const currentStep = operations[currentStepIndex] || { tree: null, message: "No operations performed yet", highlighted: null };
+
+    return (
+        <div>
+            <Navbar />
+
+            <div className="flex flex-col bg-gradient-to-br from-white/10 to-white/20 backdrop-blur-lg rounded-xl border border-white/20 shadow-xl p-6 max-w-6xl w-full mx-auto text-gray-800 mt-17 mb-10">
+
+                <h1 className="text-3xl font-bold text-center mb-6 text-gray-700">Left-Leaning Red-Black Tree Visualization</h1>
+
+                {/* Input Controls */}
+                <div className="flex flex-wrap gap-4 justify-center mb-6">
+                    <div className="flex items-center backdrop-blur-md bg-white/30 rounded-lg shadow-sm overflow-hidden">
+                        <input
+                            type="text"
+                            value={inputKey}
+                            onChange={(e) => setInputKey(e.target.value)}
+                            placeholder="Enter key (number)"
+                            className="px-4 py-2 bg-transparent outline-none flex-grow"
+                        />
+                    </div>
+
+                    <button
+                        onClick={handleInsert}
+                        className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-all"
+                    >
+                        Insert
+                    </button>
+
+                    <button
+                        onClick={handleDelete}
+                        className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-all"
+                    >
+                        Delete
+                    </button>
+                </div>
+
+                {/* Tree Visualization */}
+                <div className="mb-6 border border-white/20 rounded-lg backdrop-blur-sm bg-white/10 shadow-inner overflow-auto">
+                    <TreeVisualization root={currentStep.tree} highlighted={currentStep.highlighted} />
+                </div>
+
+                {/* Explanation Panel */}
+                <div className="bg-indigo-100 backdrop-blur-lg p-4 rounded-lg shadow-sm mb-6 min-h-24 border border-indigo-400">
+                    <h3 className="font-semibold mb-2">Step Explanation:</h3>
+                    <p>{currentStep.message}</p>
+                </div>
+
+                {/* Animation Controls */}
+                <div className="flex flex-wrap justify-center items-center gap-4">
+                    <div className="flex items-center space-x-2">
+                        <label className="font-medium">Speed:</label>
+                        <input
+                            type="range"
+                            min="200"
+                            max="2000"
+                            step="100"
+                            value={animationSpeed}
+                            onChange={(e) => setAnimationSpeed(parseInt(e.target.value))}
+                            className="w-24"
+                        />
+                        {/* <span>{animationSpeed}ms</span> */}
+                    </div>
+
+                    <div className="flex space-x-2">
+                        <button
+                            onClick={prevStep}
+                            disabled={currentStepIndex <= 0 || isAnimating}
+                            className={`px-3 py-1 rounded-lg ${currentStepIndex <= 0 || isAnimating ? 'bg-gray-300 cursor-not-allowed' : 'bg-blue-100 hover:bg-blue-200'
+                                }`}
+                        >
+                            &lt; Prev
+                        </button>
+
+                        <button
+                            onClick={toggleAutoPlay}
+                            className={`px-3 py-1 rounded-lg ${autoPlay ? 'bg-yellow-100 hover:bg-yellow-200' : 'bg-green-100 hover:bg-green-200'
+                                }`}
+                        >
+                            {autoPlay ? 'Pause' : 'Play'}
+                        </button>
+
+                        <button
+                            onClick={nextStep}
+                            disabled={currentStepIndex >= operations.length - 1 || isAnimating}
+                            className={`px-3 py-1 rounded-lg ${currentStepIndex >= operations.length - 1 || isAnimating ? 'bg-gray-300 cursor-not-allowed' : 'bg-blue-100 hover:bg-blue-200'
+                                }`}
+                        >
+                            Next &gt;
+                        </button>
+                    </div>
+
+                    <div className="text-sm text-gray-600">
+                        Step {operations.length > 0 ? currentStepIndex + 1 : 0} of {operations.length}
+                    </div>
+                </div>
+
+                {/* Legend */}
+                <div className="mt-6 flex flex-wrap justify-center gap-4 text-sm">
+                    <div className="flex items-center">
+                        <div className="w-4 h-4 rounded-full bg-gray-500 mr-2"></div>
+                        <span>Black Node</span>
+                    </div>
+                    <div className="flex items-center">
+                        <div className="w-4 h-4 rounded-full bg-white border-2 border-red-400 mr-2"></div>
+                        <span>Red Node</span>
+                    </div>
+                    <div className="flex items-center">
+                        <div className="w-8 h-1 bg-red-400 mr-2"></div>
+                        <span>Red Edge</span>
+                    </div>
+                    <div className="flex items-center">
+                        <div className="w-8 h-1 bg-gray-500 mr-2"></div>
+                        <span>Black Edge</span>
+                    </div>
+                </div>
+
+                {/* Properties */}
+                <div className="mt-6 p-4 bg-white/20 backdrop-blur-lg rounded-lg border border-gray-400">
+                    <h3 className="font-semibold mb-2">LLRB Tree Properties:</h3>
+                    <ul className="list-disc list-inside text-sm">
+                        <li>No red right links - all red links lean left</li>
+                        <li>No node has two red links connected to it</li>
+                        <li>Perfect black balance - every path from root to null link has the same number of black links</li>
+                        <li>The root is always black</li>
+                    </ul>
+                </div>
+            </div>
+            <Footer />
+        </div>
+    );
+}

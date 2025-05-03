@@ -99,24 +99,24 @@ export default function HomePage() {
           icon: <Network size={24} />,
           color: 'bg-yellow-500'
         },
-        {
-          id: '#',
-          name: 'Binary Search',
-          category: 'searching',
-          description: 'A search algorithm that finds the position of a target value within a sorted array.',
-          timeComplexity: 'O(log n)',
-          icon: <Search size={24} />,
-          color: 'bg-blue-400'
-        },
-        {
-          id: '#',
-          name: 'AVL Tree',
-          category: 'data-structures',
-          description: 'A self-balancing binary search tree where the heights of the two child subtrees differ by at most one.',
-          timeComplexity: 'O(log n)',
-          icon: <GitBranch size={24} />,
-          color: 'bg-green-600'
-        },
+        // {
+        //   id: '#',
+        //   name: 'Binary Search',
+        //   category: 'searching',
+        //   description: 'A search algorithm that finds the position of a target value within a sorted array.',
+        //   timeComplexity: 'O(log n)',
+        //   icon: <Search size={24} />,
+        //   color: 'bg-blue-400'
+        // },
+        // {
+        //   id: '#',
+        //   name: 'AVL Tree',
+        //   category: 'data-structures',
+        //   description: 'A self-balancing binary search tree where the heights of the two child subtrees differ by at most one.',
+        //   timeComplexity: 'O(log n)',
+        //   icon: <GitBranch size={24} />,
+        //   color: 'bg-green-600'
+        // },
 
         {
           id: '#',
@@ -126,6 +126,25 @@ export default function HomePage() {
           timeComplexity: 'O(1) average',
           icon: <Database size={24} />,
           color: 'bg-blue-300'
+        },
+
+        {
+          id: '#',
+          name: 'Dynamic Programming',
+          category: 'technique',
+          description: 'A method for solving complex problems by breaking them down into simpler subproblems.',
+          timeComplexity: 'Varies',
+          icon: <Code size={24} />,
+          color: 'bg-purple-600'
+        },
+        {
+          id: 'nqueens',
+          name: 'N-Queens Problem',
+          category: 'Backtracking',
+          description: 'The problem of placing N chess queens on an N×N chessboard so that no two queens threaten each other.',
+          timeComplexity: 'O(N!)',
+          icon: <Code size={24} />,
+          color: 'bg-purple-600'
         }
       ];
       
