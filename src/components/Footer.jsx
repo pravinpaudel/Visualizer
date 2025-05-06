@@ -21,7 +21,7 @@ export default function VisualgoFooter() {
           <div className="space-y-4">
             <div className="flex items-center gap-2">
               <GitBranch className="h-7 w-7 text-indigo-600" />
-              <span className="font-bold text-xl text-indigo-700">Visualgo</span>
+              <span className="font-bold text-xl text-indigo-700">Memoize</span>
             </div>
             <p className="text-gray-600 text-sm">
               Interactive visualizations for learning algorithms and data structures.
@@ -87,7 +87,7 @@ export default function VisualgoFooter() {
         {/* Bottom section */}
         <div className="flex flex-col md:flex-row justify-between items-center text-sm text-gray-500">
           <div className="mb-4 md:mb-0">
-            <p>© {new Date().getFullYear()} Visualgo. All rights reserved.</p>
+            <p>© {new Date().getFullYear()} Memoize. All rights reserved.</p>
           </div>
           <div className="flex space-x-6">
             <a href="#" className="hover:text-indigo-600 transition-colors duration-200">Terms</a>

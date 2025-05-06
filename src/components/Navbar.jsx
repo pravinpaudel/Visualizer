@@ -49,7 +49,7 @@ export default function VisualgoNavbar() {
             <div className="flex-shrink-0">
               <div className="flex items-center gap-2">
                 <GitBranch className="h-8 w-8 text-indigo-600" />
-                <span className="font-bold text-xl tracking-wide text-indigo-700">Visualgo</span>
+                <span className="font-bold text-xl tracking-wide text-indigo-700">Memoize</span>
               </div>
             </div>
           </div>
