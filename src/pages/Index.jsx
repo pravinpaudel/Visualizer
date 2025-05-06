@@ -32,7 +32,7 @@ export default function HomePage() {
           name: 'Quick Sort',
           category: 'sorting',
           description: 'An efficient sorting algorithm that uses divide-and-conquer strategy.',
-          timeComplexity: 'O(n log n)',
+          timeComplexity: 'O(n^2) worst, O(n log n) average',
           icon: <SortAsc size={24} />,
           color: 'bg-blue-500'
         },
