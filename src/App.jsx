@@ -9,10 +9,12 @@ import HeapSort from "./pages/HeapSort";
 import Dijkstras from "./pages/Dijkstras";
 import Kruskal from "./pages/Kruskal";
 import NQueens from "./pages/NQueens";
+import { Analytics } from "@vercel/analytics/react"
 
 function App() {
   return (
     <BrowserRouter>
+      <Analytics />
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/quicksort" element={<QuickSort />} />
