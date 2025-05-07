@@ -649,6 +649,9 @@ export default function LLRBVisualization() {
                         Delete
                     </button>
                 </div>
+                <div className="text-sm text-gray-500 mb-4 text-center">
+                    Note: Hit Next/Prev to see the steps of insertion/deletion.
+                </div>
 
                 {/* Tree Visualization */}
                 <div className="mb-6 border border-white/20 rounded-lg backdrop-blur-sm bg-white/10 shadow-inner overflow-auto">
