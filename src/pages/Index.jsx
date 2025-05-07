@@ -63,24 +63,24 @@ export default function HomePage() {
           icon: <SortAsc size={24} />,
           color: 'bg-green-500'
         },
-        {
-          id: '#',
-          name: 'Breadth-First Search',
-          category: 'graph',
-          description: 'An algorithm for traversing or searching tree or graph data structures.',
-          timeComplexity: 'O(V + E)',
-          icon: <Network size={24} />,
-          color: 'bg-purple-500'
-        },
-        {
-          id: '#',
-          name: 'Depth-First Search',
-          category: 'graph',
-          description: 'An algorithm for traversing or searching tree or graph data structures.',
-          timeComplexity: 'O(V + E)',
-          icon: <Network size={24} />,
-          color: 'bg-purple-600'
-        },
+        // {
+        //   id: '#',
+        //   name: 'Breadth-First Search',
+        //   category: 'graph',
+        //   description: 'An algorithm for traversing or searching tree or graph data structures.',
+        //   timeComplexity: 'O(V + E)',
+        //   icon: <Network size={24} />,
+        //   color: 'bg-purple-500'
+        // },
+        // {
+        //   id: '#',
+        //   name: 'Depth-First Search',
+        //   category: 'graph',
+        //   description: 'An algorithm for traversing or searching tree or graph data structures.',
+        //   timeComplexity: 'O(V + E)',
+        //   icon: <Network size={24} />,
+        //   color: 'bg-purple-600'
+        // },
         {
           id: 'dijkstra',
           name: 'Dijkstra\'s Algorithm',
@@ -95,7 +95,7 @@ export default function HomePage() {
           name: 'Kruskal\'s Algorithm',
           category: 'graph',
           description: 'An algorithm for finding the minimum spanning tree of a connected, weighted graph.',
-          timeComplexity: 'O(E log E)',
+          timeComplexity: 'O(E log V)',
           icon: <Network size={24} />,
           color: 'bg-yellow-500'
         },
@@ -128,15 +128,15 @@ export default function HomePage() {
         //   color: 'bg-blue-300'
         // },
 
-        {
-          id: '#',
-          name: 'Dynamic Programming',
-          category: 'technique',
-          description: 'A method for solving complex problems by breaking them down into simpler subproblems.',
-          timeComplexity: 'Varies',
-          icon: <Code size={24} />,
-          color: 'bg-purple-600'
-        },
+        // {
+        //   id: '#',
+        //   name: 'Dynamic Programming',
+        //   category: 'technique',
+        //   description: 'A method for solving complex problems by breaking them down into simpler subproblems.',
+        //   timeComplexity: 'Varies',
+        //   icon: <Code size={24} />,
+        //   color: 'bg-purple-600'
+        // },
         {
           id: 'nqueens',
           name: 'N-Queens Problem',
