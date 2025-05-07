@@ -118,15 +118,15 @@ export default function HomePage() {
         //   color: 'bg-green-600'
         // },
 
-        {
-          id: '#',
-          name: 'Hash Table',
-          category: 'data-structures',
-          description: 'A data structure that implements an associative array abstract data type.',
-          timeComplexity: 'O(1) average',
-          icon: <Database size={24} />,
-          color: 'bg-blue-300'
-        },
+        // {
+        //   id: '#',
+        //   name: 'Hash Table',
+        //   category: 'data-structures',
+        //   description: 'A data structure that implements an associative array abstract data type.',
+        //   timeComplexity: 'O(1) average',
+        //   icon: <Database size={24} />,
+        //   color: 'bg-blue-300'
+        // },
 
         {
           id: '#',
