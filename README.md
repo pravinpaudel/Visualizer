@@ -52,5 +52,16 @@ Algorithm Visualizer is a React-based web application that helps users understan
 2. Include step-by-step explanations for each algorithm.
 3. Add user customization options for visualization speed and themes.
 
+## 📄 Professional Documentation
+
+Looking to showcase this project on your resume or in interviews? Check out our comprehensive professional documentation package:
+
+- **[DOCUMENTATION_README.md](DOCUMENTATION_README.md)** - Start here! Master guide for using all documentation
+- **[PROJECT_REPORT.md](PROJECT_REPORT.md)** - Complete technical deep-dive (22KB)
+- **[RESUME_BULLETS.md](RESUME_BULLETS.md)** - 15+ ready-to-use resume bullets (13KB)
+- **[QUICK_REFERENCE.md](QUICK_REFERENCE.md)** - Interview prep & quick facts (14KB)
+
+These documents are specifically designed for job applications to top companies like Microsoft, Google, Amazon, Meta, and Apple.
+
 ## Contributing
 Contributions are welcome! If you'd like to contribute, please fork the repository and submit a pull request.
