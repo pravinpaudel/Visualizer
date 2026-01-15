@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { useAnimationControls } from '../components/useAnimationControls';
 import { PlayCircle, PauseCircle, StepForward, StepBack, RotateCcw, ChevronUp, ChevronDown } from 'lucide-react';
 import Footer from '../components/Footer';
 import Navbar from '../components/Navbar';
@@ -10,10 +11,18 @@ import ArrayVisualization from '../components/ArrayVisualization';
 export default function MergeSortVisualizer() {
   // Initial array state
   const [array, setArray] = useState([38, 27, 43, 3, 9, 82, 10]);
-  const [animationSpeed, setAnimationSpeed] = useState(1000);
   const [mergeSteps, setMergeSteps] = useState([]);
-  const [currentStepIndex, setCurrentStepIndex] = useState(-1);
-  const [isPlaying, setIsPlaying] = useState(false);
+  // Animation controls abstraction
+  const {
+    currentStep: currentStepIndex,
+    setCurrentStep: setCurrentStepIndex,
+    isPlaying,
+    togglePlay,
+    speedSlider,
+    setSpeedSlider,
+    animationSpeed,
+    handleStep
+  } = useAnimationControls(mergeSteps.length, undefined, 1000);
   const [explanationExpanded, setExplanationExpanded] = useState(true);
   const animationRef = useRef(null);
 
@@ -27,7 +36,7 @@ export default function MergeSortVisualizer() {
   // Reset the visualization
   const resetVisualization = () => {
     setCurrentStepIndex(-1);
-    setIsPlaying(false);
+    if (isPlaying) togglePlay();
     if (animationRef.current) {
       clearTimeout(animationRef.current);
     }
@@ -200,40 +209,22 @@ export default function MergeSortVisualizer() {
   }, [array]);
 
   // Move to next step
-  const nextStep = () => {
-    if (currentStepIndex < mergeSteps.length - 1) {
-      setCurrentStepIndex(prev => prev + 1);
-    } else {
-      setIsPlaying(false);
-    }
-  };
-
-  // Move to previous step
-  const prevStep = () => {
-    if (currentStepIndex > 0) {
-      setCurrentStepIndex(prev => prev - 1);
-    }
-  };
-
-  // Play/pause animation
-  const togglePlay = () => {
-    setIsPlaying(!isPlaying);
-  };
+  const nextStep = () => handleStep('next');
+  const prevStep = () => handleStep('prev');
 
   // Handle animation with useEffect
   useEffect(() => {
     if (isPlaying && currentStepIndex < mergeSteps.length - 1) {
       animationRef.current = setTimeout(() => {
-        nextStep();
+        handleStep('next');
       }, animationSpeed);
     }
-
     return () => {
       if (animationRef.current) {
         clearTimeout(animationRef.current);
       }
     };
-  }, [isPlaying, currentStepIndex, mergeSteps.length, animationSpeed]);
+  }, [isPlaying, currentStepIndex, mergeSteps.length, animationSpeed, handleStep]);
 
   // Current step for rendering
   const currentStep = mergeSteps[currentStepIndex] || { array: array, message: 'Initial array' };
@@ -262,11 +253,10 @@ export default function MergeSortVisualizer() {
               <span className="text-gray-700">Speed:</span>
               <input
                 type="range"
-                min="100"
-                max="2000"
-                step="100"
-                value={2100 - animationSpeed}
-                onChange={(e) => setAnimationSpeed(2100 - parseInt(e.target.value))}
+                min="0"
+                max="100"
+                value={speedSlider}
+                onChange={(e) => setSpeedSlider(parseInt(e.target.value))}
                 className="w-32"
               />
             </div>
@@ -280,7 +270,7 @@ export default function MergeSortVisualizer() {
             </button>
             
             <button 
-              onClick={prevStep}
+              onClick={() => handleStep('prev')}
               disabled={currentStepIndex <= 0}
               className={`p-2 rounded-full ${currentStepIndex <= 0 ? 'text-gray-400' : 'text-indigo-600 hover:bg-gray-100'} transition-colors`}
               title="Previous Step"
@@ -300,7 +290,7 @@ export default function MergeSortVisualizer() {
             </button>
             
             <button 
-              onClick={nextStep}
+              onClick={() => handleStep('next')}
               disabled={currentStepIndex >= mergeSteps.length - 1}
               className={`p-2 rounded-full ${currentStepIndex >= mergeSteps.length - 1 ? 'text-gray-400' : 'text-indigo-600 hover:bg-gray-100'} transition-colors`}
               title="Next Step"

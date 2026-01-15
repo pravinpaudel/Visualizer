@@ -97,11 +97,11 @@ export default function VisualgoFooter() {
         </div>
         
         {/* Made with love */}
-        <div className="text-center mt-8 text-xs text-gray-400 flex items-center justify-center">
+        {/* <div className="text-center mt-8 text-xs text-gray-400 flex items-center justify-center">
           <span>Made with</span>
           <Heart size={12} className="mx-1 text-red-500 inline" />
           <span>for algorithm enthusiasts</span>
-        </div>
+        </div> */}
       </div>
     </footer>
   );

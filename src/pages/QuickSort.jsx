@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { useAnimationControls } from '../components/useAnimationControls';
 import { ChevronRight, ChevronLeft, RefreshCw, Play, Pause, SkipForward, SkipBack, Plus, Minus } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
@@ -11,9 +12,17 @@ export default function QuickSortVisualizer() {
   // State variables
   const [array, setArray] = useState([]);
   const [sortingSteps, setSortingSteps] = useState([]);
-  const [currentStep, setCurrentStep] = useState(0);
-  const [isSorting, setIsSorting] = useState(false);
-  const [animationSpeed, setAnimationSpeed] = useState(2); // Index to ANIMATION_SPEEDS
+  // Animation controls abstraction
+  const {
+    currentStep,
+    setCurrentStep,
+    isPlaying: isSorting,
+    togglePlay,
+    speedSlider,
+    setSpeedSlider,
+    animationSpeed,
+    handleStep
+  } = useAnimationControls(sortingSteps.length, undefined, ANIMATION_SPEEDS[2]);
   const [arraySize, setArraySize] = useState(DEFAULT_ARRAY_SIZE);
   const [message, setMessage] = useState("Press 'Start Sorting' to begin");
 
@@ -368,62 +377,15 @@ export default function QuickSortVisualizer() {
     }
   };
 
-  // Control functions
-  const startSorting = () => {
-    if (sortingSteps.length === 0) return;
-    
-    setIsSorting(true);
-    
-    intervalRef.current = setInterval(() => {
-      setCurrentStep(prev => {
-        if (prev >= sortingSteps.length - 1) {
-          clearInterval(intervalRef.current);
-          setIsSorting(false);
-          return prev;
-        }
-        return prev + 1;
-      });
-    }, ANIMATION_SPEEDS[animationSpeed]);
-  };
-  
-  const pauseSorting = () => {
-    clearInterval(intervalRef.current);
-    setIsSorting(false);
-  };
-  
-  const nextStep = () => {
-    pauseSorting();
-    setCurrentStep(prev => Math.min(prev + 1, sortingSteps.length - 1));
-  };
-  
-  const prevStep = () => {
-    pauseSorting();
-    setCurrentStep(prev => Math.max(prev - 1, 0));
-  };
-  
+  // Step navigation
+  const nextStep = () => handleStep('next');
+  const prevStep = () => handleStep('prev');
   const restart = () => {
-    pauseSorting();
+    if (isSorting) togglePlay();
     setCurrentStep(0);
   };
-  
   const handleSpeedChange = (e) => {
-    const newSpeed = parseInt(e.target.value, 10);
-    setAnimationSpeed(newSpeed);
-    
-    // If currently sorting, restart the interval with the new speed
-    if (isSorting) {
-      clearInterval(intervalRef.current);
-      intervalRef.current = setInterval(() => {
-        setCurrentStep(prev => {
-          if (prev >= sortingSteps.length - 1) {
-            clearInterval(intervalRef.current);
-            setIsSorting(false);
-            return prev;
-          }
-          return prev + 1;
-        });
-      }, ANIMATION_SPEEDS[newSpeed]);
-    }
+    setSpeedSlider(Number(e.target.value) * 25);
   };
   
   const changeArraySize = (delta) => {
@@ -550,10 +512,10 @@ export default function QuickSortVisualizer() {
                   type="range"
                   min="0"
                   max="4"
-                  value={animationSpeed}
+                  value={Math.round(speedSlider / 25)}
                   onChange={handleSpeedChange}
                   className="w-24"
-                  title={`Animation Speed: ${['Very Slow', 'Slow', 'Medium', 'Fast', 'Very Fast'][animationSpeed]}`}
+                  title={`Animation Speed: ${['Very Slow', 'Slow', 'Medium', 'Fast', 'Very Fast'][Math.round(speedSlider / 25)]}`}
                 />
               </div>
               
@@ -574,23 +536,13 @@ export default function QuickSortVisualizer() {
                 <ChevronLeft size={20} />
               </button>
               
-              {isSorting ? (
-                <button 
-                  onClick={pauseSorting}
-                  className="bg-red-500 hover:bg-red-600 text-white rounded-lg p-2"
-                  title="Pause"
-                >
-                  <Pause size={20} />
-                </button>
-              ) : (
-                <button 
-                  onClick={startSorting}
-                  className="bg-green-500 hover:bg-green-600 text-white rounded-lg p-2"
-                  title="Start Sorting"
-                >
-                  <Play size={20} />
-                </button>
-              )}
+              <button
+                onClick={togglePlay}
+                className={`bg-${isSorting ? 'red' : 'green'}-500 hover:bg-${isSorting ? 'red' : 'green'}-600 text-white rounded-lg p-2`}
+                title={isSorting ? 'Pause' : 'Start Sorting'}
+              >
+                {isSorting ? <Pause size={20} /> : <Play size={20} />}
+              </button>
               
               <button 
                 onClick={nextStep}

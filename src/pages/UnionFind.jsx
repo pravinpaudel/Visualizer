@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
+import { useAnimationControls } from '../components/useAnimationControls';
 import { PlayCircle, PauseCircle, StepForward, StepBack, RotateCcw, FastForward } from 'lucide-react';
-import Footer from '../components/Footer';
-import Navbar from '../components/Navbar';
+import Layout from '../components/Layout';
 
 // Union-Find implementation with weighted union and path compression
 class UnionFind {
@@ -262,7 +262,6 @@ const ArrayVisualization = ({ title, array, highlightedIndices = [] }) => {
 export default function UnionFindVisualizer() {
     const [numElements, setNumElements] = useState(10);
     const [unionFind, setUnionFind] = useState(null);
-    const [currentStep, setCurrentStep] = useState(0);
     const [totalSteps, setTotalSteps] = useState(1);
     const [parents, setParents] = useState([]);
     const [sizes, setSizes] = useState([]);
@@ -271,18 +270,32 @@ export default function UnionFindVisualizer() {
     const [selectedNodes, setSelectedNodes] = useState([]);
     const [arrows, setArrows] = useState([]);
     const [description, setDescription] = useState("");
-    const [animationSpeed, setAnimationSpeed] = useState(500); // ms
-    const [isAutoPlaying, setIsAutoPlaying] = useState(false);
+    // Animation speed: higher slider value = faster animation (lower delay)
+    const minSpeed = 100; // Fastest (lowest delay)
+    const maxSpeed = 2000; // Slowest (highest delay)
+    // Slider value: 0 (slow) to 100 (fast)
     const [highlightedArrows, setHighlightedArrows] = useState([]);
+
+        // Animation controls abstraction
+        const {
+            currentStep,
+            setCurrentStep,
+            isPlaying: isAutoPlaying,
+            togglePlay: toggleAutoPlay,
+            speedSlider,
+            setSpeedSlider,
+            animationSpeed,
+            handleStep
+        } = useAnimationControls(totalSteps, undefined, 500);
 
     // Refs to get positions of nodes for drawing arrows
     const nodeRefs = useRef({});
-    const autoPlayIntervalRef = useRef(null);
 
     useEffect(() => {
         // Initialize UnionFind
         resetUnionFind();
     }, [numElements]);
+
 
     // Effect to update arrows when parents change
     useEffect(() => {
@@ -294,27 +307,6 @@ export default function UnionFindVisualizer() {
         return () => clearTimeout(timer);
     }, [parents]);
 
-    // Auto-play effect
-    useEffect(() => {
-        if (isAutoPlaying) {
-            autoPlayIntervalRef.current = setInterval(() => {
-                setCurrentStep(prev => {
-                    if (prev < totalSteps - 1) {
-                        return prev + 1;
-                    } else {
-                        setIsAutoPlaying(false);
-                        return prev;
-                    }
-                });
-            }, animationSpeed);
-        }
-
-        return () => {
-            if (autoPlayIntervalRef.current) {
-                clearInterval(autoPlayIntervalRef.current);
-            }
-        };
-    }, [isAutoPlaying, totalSteps, animationSpeed]);
 
     // Update state when step changes
     useEffect(() => {
@@ -392,11 +384,8 @@ export default function UnionFindVisualizer() {
         setTotalSteps(1);
         setArrows([]);
         setHighlightedArrows([]);
-        setIsAutoPlaying(false);
-
-        if (autoPlayIntervalRef.current) {
-            clearInterval(autoPlayIntervalRef.current);
-        }
+        // Stop autoplay if running
+        if (isAutoPlaying) toggleAutoPlay();
     };
 
     const handleUnion = () => {
@@ -415,21 +404,6 @@ export default function UnionFindVisualizer() {
         setCurrentStep(unionFind.getOperationStates().length - 1);
     };
 
-    const handleStep = (direction) => {
-        if (direction === 'prev' && currentStep > 0) {
-            setCurrentStep(currentStep - 1);
-        } else if (direction === 'next' && currentStep < totalSteps - 1) {
-            setCurrentStep(currentStep + 1);
-        } else if (direction === 'first') {
-            setCurrentStep(0);
-        } else if (direction === 'last') {
-            setCurrentStep(totalSteps - 1);
-        }
-    };
-
-    const toggleAutoPlay = () => {
-        setIsAutoPlaying(!isAutoPlaying);
-    };
 
     // Build forest visualization for the current state
     const buildForest = () => {
@@ -504,17 +478,13 @@ export default function UnionFindVisualizer() {
     };
 
     return (
-        <div className="min-h-screen flex flex-col bg-gray-50">
-            <Navbar />
-
+        <Layout>
             <div className="flex-grow container mx-auto px-4 py-8 relative overflow-hidden mt-8">
                 <div className="bg-white rounded-lg shadow-lg p-6 mb-8">
                     <h1 className="text-3xl font-bold text-center mb-6 text-indigo-800">Union-Find with Path Compression Visualizer</h1>
-
                     {/* Controls */}
                     <div className="bg-gray-50 rounded-lg shadow p-6 mb-8">
                         <h2 className="text-xl font-semibold mb-4 text-indigo-700">Interactive Controls</h2>
-
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
                             {/* Setup Controls */}
                             <div className="bg-white p-4 rounded-lg shadow">
@@ -533,7 +503,6 @@ export default function UnionFindVisualizer() {
                                             ))}
                                         </select>
                                     </div>
-
                                     <button
                                         className="w-full bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded transition-colors"
                                         onClick={resetUnionFind}
@@ -542,7 +511,6 @@ export default function UnionFindVisualizer() {
                                     </button>
                                 </div>
                             </div>
-
                             {/* Operation Controls */}
                             <div className="bg-white p-4 rounded-lg shadow">
                                 <h3 className="font-medium mb-3 text-gray-700">Operations</h3>
@@ -559,7 +527,6 @@ export default function UnionFindVisualizer() {
                                             ))}
                                         </select>
                                     </div>
-
                                     <div>
                                         <label className="block text-sm font-medium text-gray-600 mb-1">Element 2</label>
                                         <select
@@ -573,7 +540,6 @@ export default function UnionFindVisualizer() {
                                         </select>
                                     </div>
                                 </div>
-
                                 <div className="grid grid-cols-2 gap-3">
                                     <button
                                         className="bg-indigo-500 hover:bg-indigo-600 text-white px-4 py-2 rounded transition-colors"
@@ -581,7 +547,6 @@ export default function UnionFindVisualizer() {
                                     >
                                         Union
                                     </button>
-
                                     <button
                                         className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded transition-colors"
                                         onClick={handleFind}
@@ -590,27 +555,24 @@ export default function UnionFindVisualizer() {
                                     </button>
                                 </div>
                             </div>
-
                             {/* Step Controls */}
                             <div className="bg-white p-4 rounded-lg shadow">
                                 <h3 className="font-medium mb-3 text-gray-700">Step Navigation</h3>
-
                                 <div className="mb-3">
                                     <label className="block text-sm font-medium text-gray-600 mb-1">Animation Speed</label>
                                     <div className="flex items-center gap-2">
                                         <span className="text-xs">Slow</span>
                                         <input
                                             type="range"
-                                            min="100"
-                                            max="2000"
-                                            value={animationSpeed}
-                                            onChange={(e) => setAnimationSpeed(parseInt(e.target.value))}
+                                            min="0"
+                                            max="100"
+                                            value={speedSlider}
+                                            onChange={(e) => setSpeedSlider(parseInt(e.target.value))}
                                             className="flex-grow"
                                         />
                                         <span className="text-xs">Fast</span>
                                     </div>
                                 </div>
-
                                 <div className="grid grid-cols-5 gap-2">
                                     <button
                                         className={`p-2 rounded-full ${currentStep <= 0 ? 'text-gray-400' : 'text-indigo-600 hover:bg-gray-100'} transition-colors`}
@@ -619,7 +581,6 @@ export default function UnionFindVisualizer() {
                                     >
                                         <RotateCcw size={24} className="text-indigo-600" />
                                     </button>
-
                                     <button
                                         className={`p-2 rounded-full ${currentStep <= 0 ? 'text-gray-400' : 'text-indigo-600 hover:bg-gray-100'} transition-colors`}
                                         onClick={() => handleStep('prev')}
@@ -627,7 +588,6 @@ export default function UnionFindVisualizer() {
                                     >
                                         <StepBack size={24} />
                                     </button>
-
                                     <button
                                         className="p-2 rounded-full hover:bg-gray-100 transition-colors"
                                         onClick={toggleAutoPlay}
@@ -637,7 +597,6 @@ export default function UnionFindVisualizer() {
                                             <PlayCircle size={24} className="text-indigo-600" />
                                         }
                                     </button>
-
                                     <button
                                         className={`p-2 rounded-full ${currentStep >= totalSteps - 1 ? 'text-gray-400' : 'text-indigo-600 hover:bg-gray-100'} transition-colors`}
                                         onClick={() => handleStep('next')}
@@ -645,7 +604,6 @@ export default function UnionFindVisualizer() {
                                     >
                                         <StepForward size={24} />
                                     </button>
-
                                     <button
                                         className="hover:bg-gray-100 text-indigo-600 px-2 py-2 rounded transition-colors"
                                         onClick={() => handleStep('last')}
@@ -654,13 +612,12 @@ export default function UnionFindVisualizer() {
                                         <FastForward size={24} />
                                     </button>
                                 </div>
-
                                 <div className="mt-3 text-sm text-center">
                                     Step {currentStep + 1} of {totalSteps}
+                                    <div className="text-xs text-gray-400 mt-1">Animation delay: {animationSpeed} ms</div>
                                 </div>
                             </div>
                         </div>
-
                         {/* Array visualization */}
                         <div className="bg-white rounded-lg shadow p-6">
                             <div className="flex justify-between items-center mb-4">
@@ -669,11 +626,9 @@ export default function UnionFindVisualizer() {
                                     {description}
                                 </div>
                             </div>
-
                             <div className="visualization-container relative bg-gray-50 border rounded-lg overflow-auto h-96">
                                 <div className="min-h-full min-w-full p-4">
                                     {buildForest()}
-
                                     {/* Render arrows */}
                                     {arrows.map(arrow => (
                                         <Arrow
@@ -688,7 +643,6 @@ export default function UnionFindVisualizer() {
                                 </div>
                             </div>
                         </div>
-
                         <div className="bg-white p-4 rounded-lg shadow mt-6">
                             <h3 className="font-medium mb-3 text-gray-700">Data Structure View</h3>
                             <div className="overflow-x-auto">
@@ -705,12 +659,8 @@ export default function UnionFindVisualizer() {
                             </div>
                         </div>
                     </div>
-
-                    {/* Visualization */}
+                    {/* Visualization Legend */}
                     <div className="bg-white rounded-lg shadow p-6">
-
-
-                        {/* Legend */}
                         <div className="mt-4 flex flex-wrap gap-4  text-sm justify-center">
                             <div className="flex items-center">
                                 <div className="bg-green-100 border-green-500 border-2 w-5 h-5 mr-2 rounded-full"></div>
@@ -735,8 +685,6 @@ export default function UnionFindVisualizer() {
                     </div>
                 </div>
             </div>
-
-            <Footer />
-        </div>
+        </Layout>
     );
 }
